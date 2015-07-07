@@ -1,0 +1,251 @@
+import "../lib/_Datatypes.thingml"
+
+thing fragment Msgs {
+	message mEmpty();
+	message mChar(p : Char);
+	message mBoolean(p : Boolean);
+	message mUInt8(p : UInt8);
+	message mUInt16(p : UInt16);
+	message mInt16(p : Int16);
+	message mUInt32(p : UInt32);
+	message mInteger(p : Integer);
+	message mLong(p : Long);
+	message mDouble(p : Double);
+	message mFloat(p : Float);
+	message mDoubleFloat(p1 : Float, p2 : Float);
+	message mEnum(p : DigitalState);
+	message ready();
+}
+
+thing Sender includes Msgs {
+	required port myPort {
+		receives ready
+		sends  mEmpty, mChar, mBoolean, mUInt8, mUInt16, mInt16, mUInt32, mInteger, mLong, mDouble, mFloat, mEnum, mDoubleFloat
+	}
+
+
+	statechart SenderChart init Init {
+		state Init {
+			on entry do
+				print "[Sender] Ready\n"
+			end
+			transition -> Send_mEmtpy event myPort?ready
+		}
+		state Send_mEmtpy {
+			on entry do
+				myPort!mEmpty()
+				print "[Sender] sent mEmpty()\n"
+			end
+			
+			transition -> Send_mChar
+		}
+		state Send_mChar {
+			on entry do
+				myPort!mChar('\'c\'')
+				print "[Sender] sent mChar('c')\n"
+			end
+			
+			transition -> Send_mBoolean
+		}
+		state Send_mBoolean {
+			on entry do
+				myPort!mBoolean(true)
+				print "[Sender] sent mBoolean(true)\n"
+			end
+			
+			transition -> Send_mUInt8
+		}
+		state Send_mUInt8 {
+			on entry do
+				myPort!mUInt8(255)
+				print "[Sender] sent mUInt8(255)\n"
+			end
+			
+			transition -> Send_mUInt16
+		}
+		state Send_mUInt16 {
+			on entry do
+				myPort!mUInt16(12345)
+				print "[Sender] sent mUInt16(12345)\n"
+			end
+			
+			transition -> Send_mInt16
+		}
+		state Send_mInt16 {
+			on entry do
+				myPort!mInt16('-12345')
+				print "[Sender] sent mInt16('-12345')"
+					'fprintf(stderr," %x \n", -12345);'
+			end
+			
+			transition -> Send_mUInt32
+		}
+		state Send_mUInt32 {
+			on entry do
+				myPort!mUInt32(1234567)
+				print "[Sender] sent mUInt32(1234567)\n"
+			end
+			
+			transition -> Send_mInteger
+		}
+		state Send_mInteger {
+			on entry do
+				myPort!mInteger('0xFFFF')
+				print "[Sender] sent mInteger('0xFFFF')\n"
+			end
+			
+			transition -> Send_mFloat
+		}
+		state Send_mFloat {
+			on entry do
+				myPort!mFloat('3.14')
+				print "[Sender] sent mFloat(3.14)"
+					'fprintf(stderr," %x \n", 3.14);'
+			end
+			
+			transition -> Send_mDoubleFloat
+		}
+		state Send_mDoubleFloat {
+			on entry do
+				myPort!mDoubleFloat('3.14', '3.14')
+				print "[Sender] sent mDoubleFloat(3.14, 3.14)"
+					'fprintf(stderr," %x \n", 3.14);'
+			end
+			
+			transition -> Send_mDouble
+		}
+		state Send_mDouble {
+			on entry do
+				myPort!mDouble('3.14')
+				print "[Sender] sent mDouble(3.14)"
+					'fprintf(stderr," %x \n", 3.14);'
+			end
+			
+			transition -> Send_mLong
+		}
+		state Send_mLong {
+			on entry do
+				myPort!mLong(-1)
+				print "[Sender] sent mLong(-1)"
+					'fprintf(stderr," %x \n", -1);'
+			end
+			
+			transition -> Send_mEnum
+		}
+		state Send_mEnum {
+			on entry do
+				myPort!mEnum(DigitalState:HIGH)
+				print "[Sender] sent mEnum(DigitalState:HIGH)\n"
+				print "[Sender] Done.\n"
+				
+			end
+			
+		}
+	}
+}
+
+thing Receiver includes Msgs {
+	provided port myPort {
+		sends ready
+		receives mEmpty, mChar, mBoolean, mUInt8, mUInt16, mInt16, mUInt32, mInteger, mLong, mDouble, mFloat, mEnum, mDoubleFloat
+	}
+
+
+	statechart SenderChart init Init {
+		state Init {
+			on entry do
+				print "[Receiver] Ready\n"
+				myPort!ready()
+			end
+		
+		internal event e : myPort?mEmpty action do
+				print "[Receiver] received mEmpty "
+				print "\n"
+			end
+		internal event e : myPort?mChar action do
+					print "[Receiver] received mChar "
+					'fprintf(stderr," %c",'& e.p &');'
+					'fprintf(stderr," %x",'& e.p &');'
+					print "\n"
+				end
+		internal event e : myPort?mBoolean action do
+					print "[Receiver] received mBoolean "
+					'fprintf(stderr," %i",'& e.p &');'
+					'fprintf(stderr," %x",'& e.p &');'
+					print "\n"
+				end
+		internal event e : myPort?mUInt8 action do
+					print "[Receiver] received mUInt8 "
+					'fprintf(stderr," %i",'& e.p &');'
+					'fprintf(stderr," %x",'& e.p &');'
+					print "\n"
+				end
+		internal event e : myPort?mUInt16 action do
+					print "[Receiver] received mUInt16 "
+					'fprintf(stderr," %i",'& e.p &');'
+					'fprintf(stderr," %x",'& e.p &');'
+					print "\n"
+				end
+		internal event e : myPort?mInt16 action do
+					print "[Receiver] received mInt16 "
+					'fprintf(stderr," %i",'& e.p &');'
+					'fprintf(stderr," %x",'& e.p &');'
+					print "\n"
+				end
+		internal event e : myPort?mUInt32 action do
+					print "[Receiver] received mUInt32 "
+					'fprintf(stderr," %i",'& e.p &');'
+					'fprintf(stderr," %x",'& e.p &');'
+					print "\n"
+				end
+		internal event e : myPort?mInteger action do
+					print "[Receiver] received mInteger "
+					'fprintf(stderr," %i",'& e.p &');'
+					'fprintf(stderr," %x",'& e.p &');'
+					print "\n"
+				end
+		internal event e : myPort?mLong action do
+					print "[Receiver] received mLong "
+					'fprintf(stderr," %i",'& e.p &');'
+					'fprintf(stderr," %x",'& e.p &');'
+					print "\n"
+				end
+		internal event e : myPort?mDouble action do
+					print "[Receiver] received mDouble "
+					'fprintf(stderr," %f",'& e.p &');'
+					'fprintf(stderr," %x",'& e.p &');'
+					print "\n"
+				end
+		internal event e : myPort?mFloat action do
+					print "[Receiver] received mFloat "
+					'fprintf(stderr," %f",'& e.p &');'
+					'fprintf(stderr," %x",'& e.p &');'
+					print "\n"
+				end
+		internal event e : myPort?mDoubleFloat action do
+					print "[Receiver] received mFloat "
+					'fprintf(stderr," %f",'& e.p1 &');'
+					'fprintf(stderr," %x",'& e.p1 &');'
+					print " "
+					'fprintf(stderr," %f",'& e.p2 &');'
+					'fprintf(stderr," %x",'& e.p2 &');'
+					print "\n"
+				end
+		internal event e : myPort?mEnum action do
+					print "[Receiver] received mEnum "
+					//'fprintf(stderr,"%i",'& e.p &');'
+					print "\n"
+				end
+		
+		}
+	}
+}
+
+configuration Serialization_test_Cfg
+@arduino_stdout "Serial"
+{
+	instance s: Sender
+	instance r : Receiver
+	
+	connector s.myPort => r.myPort
+}

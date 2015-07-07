@@ -1,0 +1,76 @@
+import "Msgs.thingml"
+import "../../lib/_Datatypes.thingml"
+
+configuration ButtonControllerCfg
+@c_header "#include \"/home/sintef/Documents/ArduinoSerialForward/ArduinoSerialForward.h\""
+{
+	instance bc : ButtonController
+	instance out : Out
+	@c_external_init "setupArduinoSerialForward(9600)"
+	@c_external_set_listener_id "setListenerID"
+	
+	connector bc.LEDport => out.Serial
+	@c_external_send "forwardMessageSerial"
+}
+
+thing Out includes Msgs
+@remote "true"
+{
+	provided port Serial {
+		sends LEDControllerReady
+		receives LEDON, LEDOFF
+	}
+}
+
+thing ButtonController includes Msgs
+@c_header "#include <SoftwareSerial.h>"
+@c_global "SoftwareSerial mySerial(10, 11);"
+{
+	property ButtonPin : UInt8 = 7
+	
+	property ButtonIsPressed : Boolean = false
+	property LEDON : Boolean = false
+	
+	required port LEDport {
+		receives LEDControllerReady
+		sends LEDON, LEDOFF
+	}
+	
+	statechart LEDControllerChart init Init {
+		state Init {
+			on entry do
+				'mySerial.begin(9600);'
+				'mySerial.println("[Controller] Init");'
+				'pinMode('& ButtonPin &', INPUT);'
+			end
+			transition -> Running
+		}
+		
+		state Running {
+			on entry do
+				
+				
+				if (not(ButtonIsPressed)) do
+					ButtonIsPressed = 'digitalRead(' & ButtonPin & ')'
+					if (ButtonIsPressed) do
+						if(LEDON) do
+							LEDport!LEDOFF()
+							'mySerial.println("[Controller] sent LEDOFF");'
+						end
+						if(not(LEDON)) do
+							LEDport!LEDON()
+							'mySerial.println("[Controller] sent LEDON");'
+						end
+						LEDON = not(LEDON)
+					end
+				end
+				
+				ButtonIsPressed = 'digitalRead(' & ButtonPin & ')'
+				'delay(100);'
+			end
+			
+			transition -> Running
+		}
+	}
+}
+
