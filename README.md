@@ -20,8 +20,9 @@ parameter int length
 
 
 ## Message form in ThingML
-
+```
   msgID | instID |
  __________________
 | 0 | 1 | 3 | 4  | ......
  ------------------
+ ```
