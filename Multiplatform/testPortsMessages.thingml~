@@ -1,0 +1,59 @@
+configuration myCfg {
+	instance t1 : T1
+	instance t2 : T2
+	
+	connector t2.p1 => t1.p1
+	connector t2.p2 => t1.p2
+	connector t2.p2 => t1.p1
+}
+
+thing fragment Msg {
+	message m();
+}
+
+thing T1 includes Msg {
+	provided port p1{
+		sends m
+	}
+	
+	provided port p2 {
+		sends m
+	}
+
+	statechart chart init Init {
+		state Init {
+			on entry do
+				p1!m()
+				print "[T1] sent p1!m()\n"
+				p2!m()
+				print "[T1] sent p2!m()\n"
+			end
+		}
+	}
+}
+
+thing T2 includes Msg {
+	required port p1{
+		receives m
+	}
+	
+	required port p2 {
+		receives m
+	}
+
+	statechart chart init Init {
+		state Init {
+			on entry do
+				print "[T2] Init\n"
+			end
+
+			internal event e : p1?m action do
+				print "[T2] received p1?m\n"
+			end
+
+			internal event e : p2?m action do
+				print "[T2] received p2?m\n"
+			end
+		}
+	}
+}

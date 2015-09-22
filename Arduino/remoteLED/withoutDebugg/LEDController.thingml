@@ -1,0 +1,54 @@
+
+import "../../../lib/_Datatypes.thingml"
+import "Msgs.thingml"
+
+configuration LEDControllerCfg
+@c_header "#include \"/home/sintef/Documents/ArduinoSerialForward/ArduinoSerialForward.h\""
+{
+	instance lc : LEDController
+	instance out : Out
+	@c_external_init "setupArduinoSerialForward(9600)"
+	@c_external_listen "readSerial()"
+	@c_external_set_listener_id "setListenerID"
+	
+	connector lc.LEDport => out.Serial
+	@c_external_send "forwardMessageSerial"
+	
+}
+
+thing Out includes Msgs
+@remote "true"
+{
+	provided port Serial {
+		receives LEDControllerReady
+		sends LEDON, LEDOFF
+	}
+}
+
+thing LEDController includes Msgs {
+	property LEDpin : UInt8 = 7
+	
+	required port LEDport {
+		sends LEDControllerReady
+		receives LEDON, LEDOFF
+	}
+	
+	statechart LEDControllerChart init Init {
+		state Init {
+			transition -> Idle action do
+				'pinMode('& LEDpin &', OUTPUT);'
+			end
+		}
+		
+		state Idle {
+			internal event LEDport?LEDON action do
+				'digitalWrite('& LEDpin &', HIGH);'
+			end
+			
+			internal event LEDport?LEDOFF action do
+				'digitalWrite('& LEDpin &', LOW);'
+			end
+		}
+	}
+}
+

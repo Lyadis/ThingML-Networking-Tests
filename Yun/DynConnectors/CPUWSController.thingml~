@@ -1,0 +1,143 @@
+import "Msgs.thingml"
+import "../../lib/_Datatypes.thingml"
+
+configuration ButtonControllerCfg
+@c_compiler "/openwrt-yun/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/bin/mips-openwrt-linux-gcc"
+@add_c_libraries "websockets"
+@add_c_libraries "ssl"
+@add_c_libraries "crypto"
+@add_c_libraries "z"
+@add_c_libraries_rep "/openwrt-yun/staging_dir/target-mips_r2_uClibc-0.9.33.2/lib"
+@add_c_libraries_rep "/openwrt-yun/staging_dir/target-mips_r2_uClibc-0.9.33.2/usr/lib"
+@add_c_flags "-I/openwrt-yun/staging_dir/target-mips_r2_uClibc-0.9.33.2/usr/include"
+@add_c_flags "-I/openwrt-yun/staging_dir/target-mips_r2_uClibc-0.9.33.2/include"
+//@trace_level "3"
+{
+	instance bc : ButtonController
+
+	connector bc.Green => bc.Uno
+	connector bc.Blue => bc.Due
+	
+	connector bc.Bridge over Serial1
+	//@trace_level "3"
+	@serial_path_to_device "/dev/ttyATH0"
+	@serial_baudrate "115200"
+	
+	connector bc.WS over Websocket
+	//@trace_level "3"
+}
+
+thing ButtonController includes Msgs
+{
+	
+	required port Bridge {
+		sends GreenON, GreenOFF, BlueON, BlueOFF
+		receives UnoON, UnoOFF, DueON, DueOFF
+	}
+	
+	required port WS {
+		sends GreenON, GreenOFF, BlueON, BlueOFF, UnoON, UnoOFF, DueON, DueOFF
+		receives UnoON, UnoOFF, DueON, DueOFF
+	}
+	
+	required port Green {
+		receives UnoON, UnoOFF, DueON, DueOFF
+		sends Useless
+	}
+	
+	required port Blue {
+		receives UnoON, UnoOFF, DueON, DueOFF
+		sends Useless
+	}
+	
+	provided port Uno {
+		sends UnoON, UnoOFF, DueON, DueOFF
+		receives Useless
+	}
+	
+	provided port Due {
+		sends UnoON, UnoOFF, DueON, DueOFF
+		receives Useless
+	}
+
+	
+	statechart LEDControllerChart init Init {
+		state Init {
+			on entry do
+				'printf("[CPU] Init\n");'
+			end
+			transition -> Running
+		}
+		
+		state Running {
+			internal event Bridge?UnoON action do
+				Uno!UnoON()
+				WS!UnoON()
+				'printf("[CPU] UnoON\n");'
+			end
+			internal event Bridge?UnoOFF action do
+				Uno!UnoOFF()
+				WS!UnoOFF()
+				'printf("[CPU] UnoOFF\n");'
+			end
+			internal event Bridge?DueON action do
+				Due!DueON()
+				WS!DueON()
+				'printf("[CPU] DueON\n");'
+			end
+			internal event Bridge?DueOFF action do
+				Due!DueOFF()
+				WS!DueOFF()
+				'printf("[CPU] DueOFF\n");'
+			end
+
+			internal event WS?UnoON action do
+				Uno!UnoON()
+				WS!UnoON()
+				'printf("[CPU] UnoON\n");'
+			end
+			internal event WS?UnoOFF action do
+				Uno!UnoOFF()
+				WS!UnoOFF()
+				'printf("[CPU] UnoOFF\n");'
+			end
+			internal event WS?DueON action do
+				Due!DueON()
+				WS!DueON()
+				'printf("[CPU] DueON\n");'
+			end
+			internal event WS?DueOFF action do
+				Due!DueOFF()
+				WS!DueOFF()
+				'printf("[CPU] DueOFF\n");'
+			end
+
+
+			internal event Green?UnoON action do
+				Bridge!GreenON()
+				WS!GreenON()
+				'printf("[CPU] GreenON\n");'
+			end
+			internal event Green?DueON action do
+				Bridge!GreenON()
+				WS!GreenON()
+				'printf("[CPU] GreenON\n");'
+			end
+
+			internal event Blue?UnoON action do
+				Bridge!BlueON()
+				WS!BlueON()
+				'printf("[CPU] BlueON\n");'
+			end
+			internal event Blue?DueON action do
+				Bridge!BlueON()
+				WS!BlueON()
+				'printf("[CPU] BlueON\n");'
+			end
+
+			
+
+		}
+	}
+}
+

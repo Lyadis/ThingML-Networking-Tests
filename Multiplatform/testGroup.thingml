@@ -1,0 +1,121 @@
+thing fragment Msgs {
+	message printHello();
+}
+
+thing t1 includes Msgs {
+	provided port p {
+		receives printHello
+	}
+
+	statechart chrt init Active {
+
+		state Active {
+			internal event p?printHello
+			action do print "[t1] Hello\n" end
+		}
+	}
+}
+
+thing t2 includes Msgs {
+	provided port p {
+		receives printHello
+	}
+	provided port p2 {
+		receives printHello
+	}
+	required port p3 {
+		receives printHello
+	}
+	required port p4 {
+		receives printHello
+	}
+
+	statechart chrt init Active {
+
+		state Active {
+			internal event p?printHello
+			action do print "[t2] p:Hello\n" end
+			internal event p2?printHello
+			action do print "[t2] p2:Hello\n" end
+			internal event p3?printHello
+			action do print "[t2] p3:Hello\n" end
+			internal event p4?printHello
+			action do print "[t2] p4:Hello\n" end
+		}
+	}
+}
+
+thing gateway includes Msgs {
+	provided port listen {
+		receives printHello
+	}
+	required port send {
+		sends printHello
+	}
+	provided port send2 {
+		sends printHello
+	}
+
+	statechart chrt init Active {
+
+		state Active {
+			internal event listen?printHello
+			action do 
+				send!printHello()
+				send2!printHello()
+				print "[gateway] msg received\n"
+			end
+		}
+	}
+}
+
+thing sender includes Msgs {
+	required port p {
+		sends printHello
+	}
+	provided port p2 {
+		sends printHello
+	}
+
+	statechart chrt init Active {
+
+		state Active {
+			on entry do 
+				p!printHello()
+				p2!printHello()
+				print "[sender] msg sent\n"
+			end
+		}
+	}
+}
+
+configuration fragment Y {
+	instance t1 : t1
+	instance t2 : t2
+	instance g : gateway
+
+	connector g.send => t1.p
+	connector g.send => t2.p
+	connector g.send => t2.p2
+	connector t2.p3 => g.send2
+	connector t2.p4 => g.send2
+}
+
+configuration testGroupCfg {
+	group g1 : Y
+	group g2 : Y
+	instance s1 : sender
+	instance s2 : sender
+
+	connector s1.p => g1.g.listen
+	connector s1.p => g2.g.listen
+
+	connector s2.p => g1.g.listen
+	connector s2.p => g2.g.listen
+	
+	connector s2.p => g2.t2.p
+	connector s2.p => g2.t2.p2
+	connector g2.t2.p3 => s2.p2
+	connector g2.t2.p4 => s2.p2
+
+}

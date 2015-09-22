@@ -1,0 +1,38 @@
+thing fragment Msgs {
+	message m();
+	message m2();
+	message m3();
+}
+
+thing antisocial includes Msgs {
+	required port pout {
+		sends m, m2
+	}
+	provided port pin {
+		receives m, m3
+	}
+	statechart Chart init Init {
+		state Init {
+			on entry do
+				print "[antisocial] Init\n"
+				pout!m()
+				print "[antisocial] sent m\n"
+				pout!m2()
+				print "[antisocial] sent m2\n"
+			end
+			
+			internal event pin?m action do
+				print "[antisocial] received m\n"
+			end
+			
+			internal event pin?m3 action do
+				print "[antisocial] received m3\n"
+			end
+		}
+	}
+}
+
+configuration disymetrical_selfCfg {
+	instance a : antisocial
+	connector a.pout => a.pin
+}

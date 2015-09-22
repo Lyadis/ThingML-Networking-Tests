@@ -1,0 +1,492 @@
+/*****************************************************************************
+ * Headers for type : ButtonController
+ *****************************************************************************/
+
+// Definition of the instance stuct:
+struct ButtonController_Instance {
+// Variables for the ID of the ports of the instance
+uint16_t id_LEDport;
+// Pointer to receiver list
+struct Msg_Handler ** LEDport_receiver_list_head;
+struct Msg_Handler ** LEDport_receiver_list_tail;
+// Handler Array
+struct Msg_Handler * LEDport_handlers;
+// Variables for the current instance state
+int ButtonController_LEDControllerChart_State;
+// Variables for the properties of the instance
+uint8_t ButtonController_ButtonPin__var;
+uint8_t ButtonController_ButtonIsPressed__var;
+uint8_t ButtonController_LEDON__var;
+
+};
+// Declaration of prototypes outgoing messages:
+void ButtonController_LEDControllerChart_OnEntry(int state, struct ButtonController_Instance *_instance);
+// Declaration of callbacks for incoming messages:
+void register_ButtonController_send_LEDport_LEDON_listener(void (*_listener)(struct ButtonController_Instance *));
+void register_external_ButtonController_send_LEDport_LEDON_listener(void (*_listener)(struct ButtonController_Instance *));
+void register_ButtonController_send_LEDport_LEDOFF_listener(void (*_listener)(struct ButtonController_Instance *));
+void register_external_ButtonController_send_LEDport_LEDOFF_listener(void (*_listener)(struct ButtonController_Instance *));
+
+// Definition of the states:
+#define BUTTONCONTROLLER_LEDCONTROLLERCHART_STATE 0
+#define BUTTONCONTROLLER_LEDCONTROLLERCHART_INIT_STATE 1
+#define BUTTONCONTROLLER_LEDCONTROLLERCHART_RUNNING_STATE 2
+
+
+//#ifndef ArduinoSerialForward_h
+//
+//#define ArduinoSerialForward_h
+//#include <Arduino.h>
+//#include "ArduinoSerialForward.c"
+//
+//void Serial_setup(long bps);
+//void Serial_setListenerID(uint16_t id);
+//void Serial_forwardMessage(byte * msg, uint8_t size);
+//void Serial_read();
+
+//#endif
+//Port message handler structure
+typedef struct Msg_Handler {
+	int nb_msg;
+	uint16_t * msg;
+	void ** msg_handler;
+	void * instance;
+};
+
+
+/* Adds and instance to the runtime and returns its id */
+uint16_t add_instance(void * instance_struct);
+/* Returns the instance with id */
+void * instance_by_id(uint16_t id);
+
+/* Returns the number of byte currently in the fifo */
+int fifo_byte_length();
+/* Returns the number of bytes currently available in the fifo */
+int fifo_byte_available();
+/* Returns true if the fifo is empty */
+int fifo_empty();
+/* Return true if the fifo is full */
+int fifo_full();
+/* Enqueue 1 byte in the fifo if there is space
+   returns 1 for sucess and 0 if the fifo was full */
+int fifo_enqueue(byte b);
+/* Enqueue 1 byte in the fifo without checking for available space
+   The caller should have checked that there is enough space */
+int _fifo_enqueue(byte b);
+/* Dequeue 1 byte in the fifo.
+   The caller should check that the fifo is not empty */
+byte fifo_dequeue();
+
+/*SOFTWARE_SERIAL*/
+
+#define Serial_LISTENER_STATE_IDLE 0
+#define Serial_LISTENER_STATE_READING 1
+#define Serial_LISTENER_STATE_ESCAPE 2
+#define Serial_LISTENER_STATE_ERROR 3
+
+#define Serial_START_BYTE 18
+#define Serial_STOP_BYTE 19
+#define Serial_ESCAPE_BYTE 125
+
+#define Serial_LIMIT_BYTE_PER_LOOP 4
+#define Serial_MAX_MSG_SIZE 2
+#define Serial_MSG_BUFFER_SIZE 4
+
+
+byte Serial_serialBuffer[Serial_MSG_BUFFER_SIZE];
+uint8_t Serial_serialMsgSize = 0;
+byte Serial_incoming = 0;
+uint8_t Serial_serialListenerState = Serial_LISTENER_STATE_IDLE;
+uint16_t Serial_listener_id;
+
+
+int fifo_byte_available();
+int _fifo_enqueue(byte b);
+
+void Serial_setup(long bps) {
+	Serial.begin(bps);
+}
+
+void Serial_setListenerID(uint16_t id) {
+	Serial_listener_id = id;
+}
+
+
+void Serial_forwardMessage(byte * msg, uint8_t size) {
+  
+  Serial.write(Serial_START_BYTE);
+  for(uint8_t i = 0; i < size; i++) {
+    if((msg[i] == Serial_START_BYTE) 
+		&& (msg[i] == Serial_STOP_BYTE) 
+		&& (msg[i] == Serial_ESCAPE_BYTE)) {
+      Serial.write(Serial_ESCAPE_BYTE);
+    }
+    Serial.write(msg[i]);
+  }
+  Serial.write(Serial_STOP_BYTE);
+}
+
+void Serial_read() {
+  byte limit = 0;
+  while ((Serial.available()) && (limit < Serial_LIMIT_BYTE_PER_LOOP)) {
+   limit++;
+    Serial_incoming = Serial.read();
+    
+    switch(Serial_serialListenerState) {
+      case Serial_LISTENER_STATE_IDLE:
+        if(Serial_incoming == Serial_START_BYTE) {
+          Serial_serialListenerState = Serial_LISTENER_STATE_READING;
+          Serial_serialMsgSize = 0;
+        }
+      break;
+      
+      case Serial_LISTENER_STATE_READING:
+        if (Serial_serialMsgSize >= Serial_MAX_MSG_SIZE) {
+          Serial_serialListenerState = Serial_LISTENER_STATE_ERROR;
+        } else {
+          if(Serial_incoming == Serial_STOP_BYTE) {
+            Serial_serialListenerState = Serial_LISTENER_STATE_IDLE;
+            externalMessageEnqueue(Serial_serialBuffer, Serial_serialMsgSize, Serial_listener_id);
+            
+          } else if (Serial_incoming == Serial_ESCAPE_BYTE) {
+            Serial_serialListenerState = Serial_LISTENER_STATE_ESCAPE;
+          } else {
+            Serial_serialBuffer[Serial_serialMsgSize] = Serial_incoming;
+            Serial_serialMsgSize++;
+          }
+        }
+      break;
+      
+      case Serial_LISTENER_STATE_ESCAPE:
+        if (Serial_serialMsgSize >= Serial_MAX_MSG_SIZE) {
+          Serial_serialListenerState = Serial_LISTENER_STATE_ERROR;
+        } else {
+          Serial_serialBuffer[Serial_serialMsgSize] = Serial_incoming;
+          Serial_serialMsgSize++;
+          Serial_serialListenerState = Serial_LISTENER_STATE_READING;
+        }
+      break;
+      
+      case Serial_LISTENER_STATE_ERROR:
+        Serial_serialListenerState = Serial_LISTENER_STATE_IDLE;
+        Serial_serialMsgSize = 0;
+      break;
+    }
+  }
+  
+}
+
+#define MAX_INSTANCES 2
+#define FIFO_SIZE 256
+
+/*********************************
+ * Instance IDs and lookup
+ *********************************/
+
+void * instances[MAX_INSTANCES];
+uint16_t instances_count = 0;
+
+void * instance_by_id(uint16_t id) {
+  return instances[id];
+}
+
+uint16_t add_instance(void * instance_struct) {
+  instances[instances_count] = instance_struct;
+  return instances_count++;
+}
+
+/******************************************
+ * Simple byte FIFO implementation
+ ******************************************/
+
+byte fifo[FIFO_SIZE];
+int fifo_head = 0;
+int fifo_tail = 0;
+
+// Returns the number of byte currently in the fifo
+int fifo_byte_length() {
+  if (fifo_tail >= fifo_head)
+    return fifo_tail - fifo_head;
+  return fifo_tail + FIFO_SIZE - fifo_head;
+}
+
+// Returns the number of bytes currently available in the fifo
+int fifo_byte_available() {
+  return FIFO_SIZE - 1 - fifo_byte_length();
+}
+
+// Returns true if the fifo is empty
+int fifo_empty() {
+  return fifo_head == fifo_tail;
+}
+
+// Return true if the fifo is full
+int fifo_full() {
+  return fifo_head == ((fifo_tail + 1) % FIFO_SIZE);
+}
+
+// Enqueue 1 byte in the fifo if there is space
+// returns 1 for sucess and 0 if the fifo was full
+int fifo_enqueue(byte b) {
+  int new_tail = (fifo_tail + 1) % FIFO_SIZE;
+  if (new_tail == fifo_head) return 0; // the fifo is full
+  fifo[fifo_tail] = b;
+  fifo_tail = new_tail;
+  return 1;
+}
+
+// Enqueue 1 byte in the fifo without checking for available space
+// The caller should have checked that there is enough space
+int _fifo_enqueue(byte b) {
+  fifo[fifo_tail] = b;
+  fifo_tail = (fifo_tail + 1) % FIFO_SIZE;
+}
+
+// Dequeue 1 byte in the fifo.
+// The caller should check that the fifo is not empty
+byte fifo_dequeue() {
+  if (!fifo_empty()) {
+    byte result = fifo[fifo_head];
+    fifo_head = (fifo_head + 1) % FIFO_SIZE;
+    return result;
+  }
+  return 0;
+}
+
+/*****************************************************************************
+ * Implementation for type : ButtonController
+ *****************************************************************************/
+
+// Declaration of prototypes:
+void ButtonController_LEDControllerChart_OnExit(int state, struct ButtonController_Instance *_instance);
+void ButtonController_send_LEDport_LEDON(struct ButtonController_Instance *_instance);
+void ButtonController_send_LEDport_LEDOFF(struct ButtonController_Instance *_instance);
+// Declaration of functions:
+
+// On Entry Actions:
+void ButtonController_LEDControllerChart_OnEntry(int state, struct ButtonController_Instance *_instance) {
+switch(state) {
+case BUTTONCONTROLLER_LEDCONTROLLERCHART_STATE:
+_instance->ButtonController_LEDControllerChart_State = BUTTONCONTROLLER_LEDCONTROLLERCHART_INIT_STATE;
+ButtonController_LEDControllerChart_OnEntry(_instance->ButtonController_LEDControllerChart_State, _instance);
+break;
+case BUTTONCONTROLLER_LEDCONTROLLERCHART_INIT_STATE:
+pinMode(_instance->ButtonController_ButtonPin__var, INPUT);
+break;
+case BUTTONCONTROLLER_LEDCONTROLLERCHART_RUNNING_STATE:
+if( !((_instance->ButtonController_ButtonIsPressed__var))) {
+_instance->ButtonController_ButtonIsPressed__var = digitalRead(_instance->ButtonController_ButtonPin__var);
+if(_instance->ButtonController_ButtonIsPressed__var) {
+if(_instance->ButtonController_LEDON__var) {
+ButtonController_send_LEDport_LEDOFF(_instance);
+
+}
+if( !((_instance->ButtonController_LEDON__var))) {
+ButtonController_send_LEDport_LEDON(_instance);
+
+}
+_instance->ButtonController_LEDON__var =  !((_instance->ButtonController_LEDON__var));
+
+}
+
+}
+_instance->ButtonController_ButtonIsPressed__var = digitalRead(_instance->ButtonController_ButtonPin__var);
+delay(100);
+break;
+default: break;
+}
+}
+
+// On Exit Actions:
+void ButtonController_LEDControllerChart_OnExit(int state, struct ButtonController_Instance *_instance) {
+switch(state) {
+case BUTTONCONTROLLER_LEDCONTROLLERCHART_STATE:
+ButtonController_LEDControllerChart_OnExit(_instance->ButtonController_LEDControllerChart_State, _instance);
+break;
+case BUTTONCONTROLLER_LEDCONTROLLERCHART_INIT_STATE:
+break;
+case BUTTONCONTROLLER_LEDCONTROLLERCHART_RUNNING_STATE:
+break;
+default: break;
+}
+}
+
+// Event Handlers for incoming messages:
+void ButtonController_handle_empty_event(struct ButtonController_Instance *_instance) {
+if (_instance->ButtonController_LEDControllerChart_State == BUTTONCONTROLLER_LEDCONTROLLERCHART_INIT_STATE) {
+if (1) {
+ButtonController_LEDControllerChart_OnExit(BUTTONCONTROLLER_LEDCONTROLLERCHART_INIT_STATE, _instance);
+_instance->ButtonController_LEDControllerChart_State = BUTTONCONTROLLER_LEDCONTROLLERCHART_RUNNING_STATE;
+ButtonController_LEDControllerChart_OnEntry(BUTTONCONTROLLER_LEDCONTROLLERCHART_RUNNING_STATE, _instance);
+}
+}
+else if (_instance->ButtonController_LEDControllerChart_State == BUTTONCONTROLLER_LEDCONTROLLERCHART_RUNNING_STATE) {
+if (1) {
+ButtonController_LEDControllerChart_OnExit(BUTTONCONTROLLER_LEDCONTROLLERCHART_RUNNING_STATE, _instance);
+_instance->ButtonController_LEDControllerChart_State = BUTTONCONTROLLER_LEDCONTROLLERCHART_RUNNING_STATE;
+ButtonController_LEDControllerChart_OnEntry(BUTTONCONTROLLER_LEDCONTROLLERCHART_RUNNING_STATE, _instance);
+}
+}
+}
+
+// Observers for outgoing messages:
+void (*external_ButtonController_send_LEDport_LEDON_listener)(struct ButtonController_Instance *)= 0x0;
+void register_external_ButtonController_send_LEDport_LEDON_listener(void (*_listener)(struct ButtonController_Instance *)){
+external_ButtonController_send_LEDport_LEDON_listener = _listener;
+}
+void (*ButtonController_send_LEDport_LEDON_listener)(struct ButtonController_Instance *)= 0x0;
+void register_ButtonController_send_LEDport_LEDON_listener(void (*_listener)(struct ButtonController_Instance *)){
+ButtonController_send_LEDport_LEDON_listener = _listener;
+}
+void ButtonController_send_LEDport_LEDON(struct ButtonController_Instance *_instance){
+if (ButtonController_send_LEDport_LEDON_listener != 0x0) ButtonController_send_LEDport_LEDON_listener(_instance);
+if (external_ButtonController_send_LEDport_LEDON_listener != 0x0) external_ButtonController_send_LEDport_LEDON_listener(_instance);
+;
+}
+void (*external_ButtonController_send_LEDport_LEDOFF_listener)(struct ButtonController_Instance *)= 0x0;
+void register_external_ButtonController_send_LEDport_LEDOFF_listener(void (*_listener)(struct ButtonController_Instance *)){
+external_ButtonController_send_LEDport_LEDOFF_listener = _listener;
+}
+void (*ButtonController_send_LEDport_LEDOFF_listener)(struct ButtonController_Instance *)= 0x0;
+void register_ButtonController_send_LEDport_LEDOFF_listener(void (*_listener)(struct ButtonController_Instance *)){
+ButtonController_send_LEDport_LEDOFF_listener = _listener;
+}
+void ButtonController_send_LEDport_LEDOFF(struct ButtonController_Instance *_instance){
+if (ButtonController_send_LEDport_LEDOFF_listener != 0x0) ButtonController_send_LEDport_LEDOFF_listener(_instance);
+if (external_ButtonController_send_LEDport_LEDOFF_listener != 0x0) external_ButtonController_send_LEDport_LEDOFF_listener(_instance);
+;
+}
+
+
+
+
+
+
+/*****************************************************************************
+ * Definitions for configuration : ButtonControllerCfg
+ *****************************************************************************/
+
+//Declaration of connexion array
+#define NB_MAX_CONNEXION 0
+struct Msg_Handler * ButtonControllerCfg_receivers[NB_MAX_CONNEXION];
+
+//Declaration of instance variables
+//Instance ButtonControllerCfg_bc
+struct ButtonController_Instance ButtonControllerCfg_bc_var;
+struct Msg_Handler ButtonControllerCfg_bc_LEDport_handlers;
+uint16_t ButtonControllerCfg_bc_LEDport_msgs[1];
+void * ButtonControllerCfg_bc_LEDport_handlers_tab[1];
+
+
+
+
+void processMessageQueue() {
+if (fifo_empty()) return; // return if there is nothing to do
+
+byte mbuf[2];
+uint8_t mbufi = 0;
+
+// Read the code of the next port/message in the queue
+uint16_t code = fifo_dequeue() << 8;
+
+code += fifo_dequeue();
+
+// Switch to call the appropriate handler
+switch(code) {
+}
+}
+
+// Forwarding of messages ButtonController::LEDport::LEDON
+void forward_ButtonController_send_LEDport_LEDON(struct ButtonController_Instance *_instance){
+byte forward_buf[2];
+forward_buf[0] = (66 >> 8) & 0xFF;
+forward_buf[1] =  66 & 0xFF;
+
+
+//Forwarding with specified function 
+Serial_forwardMessage(forward_buf, 2);
+}
+
+// Forwarding of messages ButtonController::LEDport::LEDOFF
+void forward_ButtonController_send_LEDport_LEDOFF(struct ButtonController_Instance *_instance){
+byte forward_buf[2];
+forward_buf[0] = (67 >> 8) & 0xFF;
+forward_buf[1] =  67 & 0xFF;
+
+
+//Forwarding with specified function 
+Serial_forwardMessage(forward_buf, 2);
+}
+
+
+//external Message enqueue
+void externalMessageEnqueue(uint8_t * msg, uint8_t msgSize, uint16_t listener_id) {
+if ((msgSize >= 2) && (msg != NULL)) {
+uint8_t msgSizeOK = 0;
+switch(msg[0] * 256 + msg[1]) {
+}
+
+if(msgSizeOK == 1) {
+if ( fifo_byte_available() > (msgSize + 2) ) {
+	uint8_t i;
+	for (i = 0; i < 2; i++) {
+		_fifo_enqueue(msg[i]);
+	}
+	_fifo_enqueue((listener_id >> 8) & 0xFF);
+	_fifo_enqueue(listener_id & 0xFF);
+	for (i = 2; i < msgSize; i++) {
+		_fifo_enqueue(msg[i]);
+	}
+}
+}
+}
+}
+
+void initialize_configuration_ButtonControllerCfg() {
+// Initialize connectors
+register_external_ButtonController_send_LEDport_LEDON_listener(forward_ButtonController_send_LEDport_LEDON);
+register_external_ButtonController_send_LEDport_LEDOFF_listener(forward_ButtonController_send_LEDport_LEDOFF);
+
+// Init the ID, state variables and properties for instance ButtonControllerCfg_bc
+ButtonControllerCfg_bc_var.id_LEDport = add_instance( (void*) &ButtonControllerCfg_bc_var);
+ButtonControllerCfg_bc_LEDport_msgs[0] = 65;
+ButtonControllerCfg_bc_LEDport_handlers_tab[0] = NULL;
+ButtonControllerCfg_bc_LEDport_handlers.nb_msg = 1;
+ButtonControllerCfg_bc_LEDport_handlers.msg = (uint16_t *) &ButtonControllerCfg_bc_LEDport_msgs;
+ButtonControllerCfg_bc_LEDport_handlers.msg_handler = (void **) &ButtonControllerCfg_bc_LEDport_handlers_tab;
+ButtonControllerCfg_bc_LEDport_handlers.instance = &ButtonControllerCfg_bc_var;
+ButtonControllerCfg_bc_var.LEDport_handlers = &ButtonControllerCfg_bc_LEDport_handlers;
+ButtonControllerCfg_bc_var.LEDport_receiver_list_head = NULL;
+ButtonControllerCfg_bc_var.LEDport_receiver_list_tail = &ButtonControllerCfg_receivers[0];
+ButtonControllerCfg_bc_var.ButtonController_LEDControllerChart_State = BUTTONCONTROLLER_LEDCONTROLLERCHART_INIT_STATE;
+ButtonControllerCfg_bc_var.ButtonController_ButtonPin__var = 7;
+ButtonControllerCfg_bc_var.ButtonController_ButtonIsPressed__var = 0;
+ButtonControllerCfg_bc_var.ButtonController_LEDON__var = 0;
+
+
+// Network Initilization 
+Serial_setup(9600);
+//bc:
+Serial_setListenerID(ButtonControllerCfg_bc_var.id_LEDport);
+
+
+// End Network Initilization 
+
+ButtonController_LEDControllerChart_OnEntry(BUTTONCONTROLLER_LEDCONTROLLERCHART_STATE, &ButtonControllerCfg_bc_var);
+}
+
+
+
+
+void setup() {
+initialize_configuration_ButtonControllerCfg();
+
+}
+
+void loop() {
+
+// Network Listener
+ButtonController_handle_empty_event(&ButtonControllerCfg_bc_var);
+
+    processMessageQueue();
+}

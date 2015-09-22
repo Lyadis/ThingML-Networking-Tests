@@ -17,19 +17,22 @@ thing fragment Msgs {
 	message ready();
 }
 
-thing Sender includes Msgs {
+thing Sender includes Msgs
+@trace_level "2" {
 	required port myPort {
 		receives ready
 		sends  mEmpty, mChar, mBoolean, mUInt8, mUInt16, mInt16, mUInt32, mInteger, mLong, mDouble, mFloat, mEnum, mDoubleFloat
 	}
 
-
+	property myI : UInt16 = 13
 	statechart SenderChart init Init {
 		state Init {
 			on entry do
 				print "[Sender] Ready\n"
 			end
-			transition -> Send_mEmtpy event myPort?ready
+			transition -> Send_mEmtpy event myPort?ready action do
+				print "[Sender] received ready\n"
+			end
 		}
 		state Send_mEmtpy {
 			on entry do
@@ -75,7 +78,7 @@ thing Sender includes Msgs {
 			on entry do
 				myPort!mInt16('-12345')
 				print "[Sender] sent mInt16('-12345')"
-					'fprintf(stderr," %x \n", -12345);'
+					'printf(" %x \n", -12345);'
 			end
 			
 			transition -> Send_mUInt32
@@ -100,7 +103,7 @@ thing Sender includes Msgs {
 			on entry do
 				myPort!mFloat('3.14')
 				print "[Sender] sent mFloat(3.14)"
-					'fprintf(stderr," %x \n", 3.14);'
+					'printf(" %x \n", 3.14);'
 			end
 			
 			transition -> Send_mDoubleFloat
@@ -109,7 +112,7 @@ thing Sender includes Msgs {
 			on entry do
 				myPort!mDoubleFloat('3.14', '3.14')
 				print "[Sender] sent mDoubleFloat(3.14, 3.14)"
-					'fprintf(stderr," %x \n", 3.14);'
+					'printf(" %x \n", 3.14);'
 			end
 			
 			transition -> Send_mDouble
@@ -118,7 +121,7 @@ thing Sender includes Msgs {
 			on entry do
 				myPort!mDouble('3.14')
 				print "[Sender] sent mDouble(3.14)"
-					'fprintf(stderr," %x \n", 3.14);'
+					'printf(" %x \n", 3.14);'
 			end
 			
 			transition -> Send_mLong
@@ -127,7 +130,7 @@ thing Sender includes Msgs {
 			on entry do
 				myPort!mLong(-1)
 				print "[Sender] sent mLong(-1)"
-					'fprintf(stderr," %x \n", -1);'
+					'printf(" %x \n", -1);'
 			end
 			
 			transition -> Send_mEnum
@@ -144,7 +147,8 @@ thing Sender includes Msgs {
 	}
 }
 
-thing Receiver includes Msgs {
+thing Receiver includes Msgs
+@trace_level "0" {
 	provided port myPort {
 		sends ready
 		receives mEmpty, mChar, mBoolean, mUInt8, mUInt16, mInt16, mUInt32, mInteger, mLong, mDouble, mFloat, mEnum, mDoubleFloat
@@ -164,76 +168,76 @@ thing Receiver includes Msgs {
 			end
 		internal event e : myPort?mChar action do
 					print "[Receiver] received mChar "
-					'fprintf(stderr," %c",'& e.p &');'
-					'fprintf(stderr," %x",'& e.p &');'
+					'printf(" %c",'& e.p &');'
+					'printf(" %x",'& e.p &');'
 					print "\n"
 				end
 		internal event e : myPort?mBoolean action do
 					print "[Receiver] received mBoolean "
-					'fprintf(stderr," %i",'& e.p &');'
-					'fprintf(stderr," %x",'& e.p &');'
+					'printf(" %i",'& e.p &');'
+					'printf(" %x",'& e.p &');'
 					print "\n"
 				end
 		internal event e : myPort?mUInt8 action do
 					print "[Receiver] received mUInt8 "
-					'fprintf(stderr," %i",'& e.p &');'
-					'fprintf(stderr," %x",'& e.p &');'
+					'printf(" %i",'& e.p &');'
+					'printf(" %x",'& e.p &');'
 					print "\n"
 				end
 		internal event e : myPort?mUInt16 action do
 					print "[Receiver] received mUInt16 "
-					'fprintf(stderr," %i",'& e.p &');'
-					'fprintf(stderr," %x",'& e.p &');'
+					'printf(" %i",'& e.p &');'
+					'printf(" %x",'& e.p &');'
 					print "\n"
 				end
 		internal event e : myPort?mInt16 action do
 					print "[Receiver] received mInt16 "
-					'fprintf(stderr," %i",'& e.p &');'
-					'fprintf(stderr," %x",'& e.p &');'
+					'printf(" %i",'& e.p &');'
+					'printf(" %x",'& e.p &');'
 					print "\n"
 				end
 		internal event e : myPort?mUInt32 action do
 					print "[Receiver] received mUInt32 "
-					'fprintf(stderr," %i",'& e.p &');'
-					'fprintf(stderr," %x",'& e.p &');'
+					'printf(" %i",'& e.p &');'
+					'printf(" %x",'& e.p &');'
 					print "\n"
 				end
 		internal event e : myPort?mInteger action do
 					print "[Receiver] received mInteger "
-					'fprintf(stderr," %i",'& e.p &');'
-					'fprintf(stderr," %x",'& e.p &');'
+					'printf(" %i",'& e.p &');'
+					'printf(" %x",'& e.p &');'
 					print "\n"
 				end
 		internal event e : myPort?mLong action do
 					print "[Receiver] received mLong "
-					'fprintf(stderr," %i",'& e.p &');'
-					'fprintf(stderr," %x",'& e.p &');'
+					'printf(" %i",'& e.p &');'
+					'printf(" %x",'& e.p &');'
 					print "\n"
 				end
 		internal event e : myPort?mDouble action do
 					print "[Receiver] received mDouble "
-					'fprintf(stderr," %f",'& e.p &');'
-					'fprintf(stderr," %x",'& e.p &');'
+					'printf(" %f",'& e.p &');'
+					'printf(" %x",'& e.p &');'
 					print "\n"
 				end
 		internal event e : myPort?mFloat action do
 					print "[Receiver] received mFloat "
-					'fprintf(stderr," %f",'& e.p &');'
-					'fprintf(stderr," %x",'& e.p &');'
+					'printf(" %f",'& e.p &');'
+					'printf(" %x",'& e.p &');'
 					print "\n"
 				end
 		internal event e : myPort?mDoubleFloat action do
 					print "[Receiver] received mFloat "
-					'fprintf(stderr," %f",'& e.p1 &');'
-					'fprintf(stderr," %x",'& e.p1 &');'
+					'printf(" %f",'& e.p1 &');'
+					'printf(" %x",'& e.p1 &');'
 					print " "
-					'fprintf(stderr," %f",'& e.p2 &');'
-					'fprintf(stderr," %x",'& e.p2 &');'
+					'printf(" %f",'& e.p2 &');'
+					'printf(" %x",'& e.p2 &');'
 					print "\n"
 				end
 		internal event e : myPort?mEnum action do
 					print "[Receiver] received mEnum "
-					//'fprintf(stderr,"%i",'& e.p &');'
+					//'printf("%i",'& e.p &');'
 					print "\n"
 				end
 		
@@ -243,6 +247,7 @@ thing Receiver includes Msgs {
 
 configuration Serialization_test_Cfg
 @arduino_stdout "Serial"
+@trace_level "0"
 {
 	instance s: Sender
 	instance r : Receiver

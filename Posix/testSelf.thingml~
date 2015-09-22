@@ -1,0 +1,42 @@
+import "../lib/_Datatypes.thingml"
+
+thing fragment Msgs {
+	message m(i : Integer);
+}
+
+thing antisocial includes Msgs {
+	required port pout {
+		sends m
+	}
+	provided port pin {
+		receives m
+	}
+	statechart Chart init Init {
+		state Init {
+			on entry do
+				print "[antisocial] Init\n"
+				pout!m(5)
+				print "[antisocial] sent m(5)\n"
+				pout!m(2)
+				print "[antisocial] sent m(2)\n"
+			end
+			
+			internal event e : pin?m
+            guard e.i == 5
+			action do
+				print "[antisocial] received m(5)\n"
+			end
+			
+			internal event e : pin?m
+			action do
+				print "[antisocial] received m\n"
+				'printf("[antisocial] m.i:%i\n", '&e.i&');'
+			end
+		}
+	}
+}
+
+configuration selfCfg {
+	instance a : antisocial
+	connector a.pout => a.pin
+}

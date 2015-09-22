@@ -1,0 +1,53 @@
+thing fragment Msgs {
+	message m();
+	message m2();
+	message m3();
+}
+
+thing t1 includes Msgs {
+	required port pout {
+		sends m, m2
+	}
+	statechart Chart init Init {
+		state Init {
+			on entry do
+				print "[t1] Init\n"
+				pout!m()
+				print "[t1] sent m\n"
+				pout!m2()
+				print "[t1] sent m2\n"
+			end
+		}
+	}
+}
+
+thing t2 includes Msgs {
+	provided port pin {
+		sends m3
+		receives m, m3
+	}
+	statechart Chart init Init {
+		state Init {
+			on entry do
+				print "[t2] Init\n"
+			end
+			
+			internal event pin?m action do
+				print "[t2] received m\n"
+				pin!m3()
+
+			end
+			
+			internal event pin?m3 action do
+				print "[t2] received m3\n"
+			end
+		}
+	}
+}
+
+configuration disymetricalCfg {
+	instance t1 : t1
+	instance t2 : t2
+	instance t1bis : t1
+	connector t1.pout => t2.pin
+}

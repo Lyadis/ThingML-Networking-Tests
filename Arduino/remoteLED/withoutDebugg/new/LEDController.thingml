@@ -1,0 +1,44 @@
+
+import "../../../../lib/_Datatypes.thingml"
+import "Msgs.thingml"
+
+configuration LEDControllerCfg
+{
+	instance lc : LEDController
+	
+	connector lc.LEDport over Serial
+	@port_name "Serial3"
+	@c_external_init "Serial3_setup(9600)"
+	@c_external_listen "Serial3_read()"
+	@c_external_set_listener_id "Serial3_setListenerID"
+	@c_external_send "Serial3_forwardMessage"
+	
+}
+
+thing LEDController includes Msgs {
+	property LEDpin : UInt8 = 7
+	
+	required port LEDport {
+		sends LEDControllerReady
+		receives LEDON, LEDOFF
+	}
+	
+	statechart LEDControllerChart init Init {
+		state Init {
+			transition -> Idle action do
+				'pinMode('& LEDpin &', OUTPUT);'
+			end
+		}
+		
+		state Idle {
+			internal event LEDport?LEDON action do
+				'digitalWrite('& LEDpin &', HIGH);'
+			end
+			
+			internal event LEDport?LEDOFF action do
+				'digitalWrite('& LEDpin &', LOW);'
+			end
+		}
+	}
+}
+

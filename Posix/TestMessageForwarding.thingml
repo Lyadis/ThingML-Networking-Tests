@@ -1,0 +1,61 @@
+thing fragment Msgs {
+	message m();
+}
+
+thing t1 includes Msgs {
+	provided port p {
+		sends m
+	}
+	
+	statechart init s1 {
+		state s1 {
+			on entry do
+				p!m()
+				print "[t1] sent m\n"
+			end
+		}
+	}
+}
+
+thing t2 includes Msgs {
+	required port p1 {
+		receives m
+	}
+	provided port p2 {
+		sends m
+	}
+	
+	statechart init s1 {
+		state s1 {
+			internal event p1?m action do
+				print "[t2] received m"
+				p2!m()
+				print "[t2] sent m"
+			end
+		}
+	}
+}
+
+thing t3 includes Msgs {
+	required port p {
+		receives m
+	}
+	
+	statechart init s1 {
+		state s1 {
+			internal event p?m action do
+				print "[t3] received m"
+			end
+		}
+	}
+}
+
+configuration testMessageForwarding {
+	instance t1 : t1
+	instance t2 : t2
+	instance t3 : t3
+	
+	connector t2.p1 => t1.p
+	connector t3.p => t2.p2
+	
+}

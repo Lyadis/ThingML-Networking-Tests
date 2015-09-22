@@ -1,0 +1,12 @@
+
+thing fragment Msgs {
+	message GreenON() @code "60";
+	message GreenOFF() @code "61";
+	message BlueON() @code "70";
+	message BlueOFF() @code "71";
+	message UnoON() @code "80";
+	message UnoOFF() @code "81";
+	message DueON() @code "90";
+	message DueOFF() @code "91";
+	message Useless() @code "100";
+}

@@ -1,0 +1,119 @@
+/*
+ * File: HelloCPU.thingml
+ * 
+ * Description: This a simple test, its purpose is to check that cross compiling tools are working properly
+ * 
+ * TODO: Compile this ThingML into posix compatible code, and cross compile it with the arduino-yun-cross-compiler
+ * 		 docker container, then upload the executable on the Yun (CPU side) and run it.
+*/
+
+import "../lib/_Datatypes.thingml"
+import "Msgs.thingml"
+
+configuration LEDControllerCfg
+{
+	instance lc : LEDController
+	instance bc : ButtonController
+	instance b : Bridge
+	
+	connector lc.LEDport => b.LEDport
+	connector bc.LEDport => b.LEDport
+	connector b.Bridge over Serial1
+	@port_name "Serial1"
+	@serial_baudrate "115200"
+	
+}
+
+thing Bridge includes Msgs {
+	provided port LEDport {
+		receives LEDON, LEDOFF, LEDControllerReady
+		sends LEDON, LEDOFF, LEDControllerReady
+	}
+	provided port Bridge {
+		receives LEDON, LEDOFF, LEDControllerReady
+		sends LEDON, LEDOFF, LEDControllerReady
+	}
+	
+	statechart BridgeChart init Active {
+		state Active {
+			internal event LEDport?LEDON action Bridge!LEDON()
+			internal event LEDport?LEDOFF action Bridge!LEDOFF()
+			internal event Bridge?LEDON action LEDport!LEDON()
+			internal event Bridge?LEDOFF action LEDport!LEDOFF()
+		}
+	}
+}
+
+thing LEDController includes Msgs {
+	property LEDpin : UInt8 = 7
+	
+	required port LEDport {
+		sends LEDControllerReady
+		receives LEDON, LEDOFF
+	}
+	
+	statechart LEDControllerChart init Init {
+		state Init {
+			transition -> Idle action do
+				'pinMode('& LEDpin &', OUTPUT);'
+			end
+		}
+		
+		state Idle {
+			internal event LEDport?LEDON action do
+				'digitalWrite('& LEDpin &', HIGH);'
+			end
+			
+			internal event LEDport?LEDOFF action do
+				'digitalWrite('& LEDpin &', LOW);'
+			end
+		}
+	}
+}
+
+thing ButtonController includes Msgs
+{
+	property ButtonPin : UInt8 = 8
+	
+	property ButtonIsPressed : Boolean = false
+	property LEDON : Boolean = false
+	
+	required port LEDport {
+		receives LEDControllerReady
+		sends LEDON, LEDOFF
+	}
+	
+	statechart LEDControllerChart init Init {
+		state Init {
+			on entry do
+				'pinMode('& ButtonPin &', INPUT);'
+			end
+			transition -> Running
+		}
+		
+		state Running {
+			on entry do
+				
+				
+				if (not(ButtonIsPressed)) do
+					ButtonIsPressed = 'digitalRead(' & ButtonPin & ')'
+					if (ButtonIsPressed) do
+						if(LEDON) do
+							LEDport!LEDOFF()
+						end
+						if(not(LEDON)) do
+							LEDport!LEDON()
+						end
+						LEDON = not(LEDON)
+					end
+				end
+				
+				ButtonIsPressed = 'digitalRead(' & ButtonPin & ')'
+				'delay(100);'
+			end
+			
+			transition -> Running
+		}
+	}
+}
+

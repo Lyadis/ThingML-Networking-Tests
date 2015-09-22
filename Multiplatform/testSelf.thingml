@@ -1,0 +1,30 @@
+thing fragment Msgs {
+	message m();
+}
+
+thing antisocial includes Msgs {
+	required port pout {
+		sends m
+	}
+	provided port pin {
+		receives m
+	}
+	statechart Chart init Init {
+		state Init {
+			on entry do
+				print "[antisocial] Init\n"
+				pout!m()
+				print "[antisocial] sent m\n"
+			end
+			
+			internal event pin?m action do
+				print "[antisocial] received m\n"
+			end
+		}
+	}
+}
+
+configuration selfCfg {
+	instance a : antisocial
+	connector a.pout => a.pin
+}
