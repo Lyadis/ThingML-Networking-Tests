@@ -22,61 +22,15 @@ struct Msg_Handler * WS_handlers;
 extern struct Websocket_instance_type Websocket_instance;
 
 
-struct libwebsocket * Websocket_clients[16];
-int Websocket_nb_client;
+struct libwebsocket * Websocket_socket;
+
 
 struct lws_context_creation_info Websocket_info;
 struct libwebsocket_context *Websocket_context;
 
-
-uint16_t add_client(struct libwebsocket *wsi) {
-	uint16_t i = 0;
-	bool done = false;
-	while ((!done) && (i < 16)) {
-		if(Websocket_clients[i] == NULL) {
-			Websocket_clients[i] = wsi;
-			done = true;
-		}
-		i++;
-	}
-	if (!done) {
-            printf("[PosixWSForward] Client list overflow\n");
-            return -1;
-	} else {
-            Websocket_nb_client++;
-            i=i-1;
-            return i;
-	}
-}
-
-uint16_t remove_client(struct libwebsocket *wsi) {
-	uint16_t i = 0;
-	bool done = false;
-	while ((!done) && (i < 16)) {
-            if(Websocket_clients[i] == wsi) {
-                Websocket_clients[i] = NULL;
-                done = true;
-            }
-            i++;
-	}
-	if (!done) {
-            printf("[PosixWSForward] Client not found\n");
-            return -1;
-	} else {
-            Websocket_nb_client--;
-            i=i-1;
-            return i;
-	}
-}
+bool Websocket_is_open;
 
 
-static int callback_http(struct libwebsocket_context * this,
-                         struct libwebsocket *wsi,
-                         enum libwebsocket_callback_reasons reason, void *user,
-                         void *in, size_t len)
-{
-    return 0;
-}
 
 static int callback_ThingML_protocol(struct libwebsocket_context * this,
                                    struct libwebsocket *wsi,
@@ -85,15 +39,21 @@ static int callback_ThingML_protocol(struct libwebsocket_context * this,
 {
    
     switch (reason) {
-        case LWS_CALLBACK_ESTABLISHED: // just log message that someone is connecting
-            printf("[PosixWSForward] New Client\n");
-            uint16_t clientID = add_client(wsi);
-		
-            break;
+        
+	case LWS_CALLBACK_CLIENT_ESTABLISHED:
+		//printf("[Websocket] LWS_CALLBACK_CLIENT_ESTABLISHED\n");
+		/*CONNEXION_ESTABLISHED*/
+		break;
 
-        case LWS_CALLBACK_RECEIVE: {
+	case LWS_CALLBACK_CLOSED:
+		//printf("[Websocket] LWS_CALLBACK_CLOSED\n");
+		Websocket_is_open = false;
+		Websocket_socket = NULL;
+		break;
+
+	case LWS_CALLBACK_CLIENT_RECEIVE:{
             int len = strlen((char *) in);
-            printf("[PosixWSForward] l:%i\n", len);
+            //printf("[Websocket] l:%i\n", len);
             if ((len % 3) == 0) {
                     unsigned char msg[len % 3];
                     unsigned char * p = in;
@@ -121,57 +81,31 @@ static int callback_ThingML_protocol(struct libwebsocket_context * this,
                     if(everythingisfine) {
                             int j;
                             externalMessageEnqueue(msg, (len / 3), Websocket_instance.listener_id);
-                            printf("[PosixWSForward] Message received");
+                            //printf("[Websocket] Message received\n");
 
                     } else {
-                            printf("[PosixWSForward] incorrect message '%s'\n", (char *) in);
+                            printf("[Websocket] incorrect message '%s'\n", (char *) in);
                     }
             } else {
-                printf("[PosixWSForward] incorrect message '%s'\n", (char *) in);
+                printf("[Websocket] incorrect message '%s'\n", (char *) in);
             }
+		break;}
 
+	case LWS_CALLBACK_CLIENT_WRITEABLE:{
+		//printf("[Websocket] LWS_CALLBACK_CLIENT_WRITEABLE\n");
+		Websocket_is_open = true;
+		break;}
 
-			
-          
-            // send response
-            // just notice that we have to tell where exactly our response starts. That's
-            // why there's `buf[LWS_SEND_BUFFER_PRE_PADDING]` and how long it is.
-            // we know that our response has the same length as request because
-            // it's the same message in reverse order.
-            //libwebsocket_write(wsi, &buf[LWS_SEND_BUFFER_PRE_PADDING], len, LWS_WRITE_TEXT);
-           
-            // release memory back into the wild
-            //free(buf);
-            break;
-        }
-		
-        case LWS_CALLBACK_WSI_DESTROY: {
-                uint16_t clientID = remove_client(wsi);
-		
-                printf("[PosixWSForward] Wsi destroyed\n");
-        }
-
-        case LWS_CALLBACK_CLOSED: {
-                printf("[PosixWSForward] Connexion with client closed\n");
-                uint16_t clientID = remove_client(wsi);
-		
-        }
-
-        default:
-            break;
+	default:
+		//printf("[Websocket] LWS_CALLBACK default\n");
+		break;
     }
    
    
     return 0;
 }
 
-static struct libwebsocket_protocols protocols[] = {
-    /* first protocol must always be HTTP handler */
-    {
-        "http-only",   // name
-        callback_http, // callback
-        0              // per_session_data_size
-    },
+static struct libwebsocket_protocols Websocket_protocols[] = {
     {
         "ThingML-protocol", // protocol name - very important!
         callback_ThingML_protocol,   // callback
@@ -187,41 +121,50 @@ void Websocket_set_listener_id(uint16_t id) {
 }
 
 void Websocket_setup() {
-    memset(&Websocket_info, 0, sizeof Websocket_info);
+	Websocket_is_open = false;
 
-    int port = 9000;
-    const char *interface = NULL;
-    // we're not using ssl
-    const char *cert_path = NULL;
-    const char *key_path = NULL;
-    // no special options
-    int opts = 0;
-   
-    Websocket_info.port = port;
-    Websocket_info.iface = interface;
-    Websocket_info.protocols = protocols;
-    Websocket_info.extensions = libwebsocket_get_internal_extensions();
-    Websocket_info.ssl_cert_filepath = NULL;
-    Websocket_info.ssl_private_key_filepath = NULL;
 
-    Websocket_info.gid = -1;
-    Websocket_info.uid = -1;
-    Websocket_info.options = opts;
-    printf("[PosixWSForward] Init WS Server on port:%i\n", port);
-}
+    
+    
+	Websocket_info.port = CONTEXT_PORT_NO_LISTEN;
+	Websocket_info.protocols = Websocket_protocols;
+	Websocket_info.extensions = libwebsocket_get_internal_extensions();
+	Websocket_info.gid = -1;
+	Websocket_info.uid = -1;
 
-void Websocket_start_receiver_process() {
 
-    printf("[PosixWSForward] Start running WS Server\n");
-    // create libwebsocket Websocket_context representing this server
+	// create libwebsocket Websocket_context representing this server
     Websocket_context = libwebsocket_create_context(&Websocket_info);
    
     if (Websocket_context == NULL) {
-        fprintf(stderr, "[PosixWSForward] libwebsocket init failed\n");
+        fprintf(stderr, "[Websocket] libwebsocket init failed\n");
         return -1;
     }
+
+    printf("[Websocket] Init WS Client on port:%i\n", 9000);
+}
+
+void Websocket_start_receiver_process() {
 	
-    printf("[PosixWSForward] Starting server...\n");
+    printf("[Websocket] Start running WS Client\n");
+	
+	int n = 0;
+	int ret = 0;
+	int port = 9000;
+	int use_ssl = 0;
+	int ietf_version = -1; /* latest */
+
+	Websocket_socket = libwebsocket_client_connect(Websocket_context, "192.168.1.108", port, use_ssl,
+			"/", "192.168.1.108", "192.168.1.108",
+			 Websocket_protocols[0].name, ietf_version);
+
+	if (Websocket_socket == NULL) {
+		fprintf(stderr, "libwebsocket connect failed\n");
+		ret = 1;
+	}
+
+	fprintf(stderr, "Waiting for connect...\n");
+    printf("[Websocket] Starting server...\n");
 	
     // infinite loop, to end this server send SIGTERM. (CTRL+C)
     while (1) {
@@ -232,29 +175,28 @@ void Websocket_start_receiver_process() {
 }
 
 void Websocket_forwardMessage(char * msg, int length) {
-	int n, m, i;
-	unsigned char buf[LWS_SEND_BUFFER_PRE_PADDING + (length * 3 + 1) +
-						  LWS_SEND_BUFFER_POST_PADDING];
-	unsigned char *p = &buf[LWS_SEND_BUFFER_PRE_PADDING];	
-	unsigned char *q = p;
-	n = 0;
-	for(i = 0; i < length; i++) {
-		//printf("%03i -> ", (unsigned char) msg[i]);
-		n += sprintf((unsigned char *)q, "%03i", (unsigned char) msg[i]);
-		//printf("%s\n", q);
-		n--;
-		q += 3;
+	if(Websocket_is_open) {
+		int n, m, i;
+		unsigned char buf[LWS_SEND_BUFFER_PRE_PADDING + (length * 3 + 1) +
+							  LWS_SEND_BUFFER_POST_PADDING];
+		unsigned char *p = &buf[LWS_SEND_BUFFER_PRE_PADDING];	
+		unsigned char *q = p;
+		n = 0;
+		for(i = 0; i < length; i++) {
+			//printf("%03i -> ", (unsigned char) msg[i]);
+			n += sprintf((unsigned char *)q, "%03i", (unsigned char) msg[i]);
+			//printf("%s\n", q);
+			n--;
+			q += 3;
+		}
+		*q = '\0';
+		n++;
+		//printf("[Websocket] Trying to send:\n%s \n", p);
+
+		m = libwebsocket_write(Websocket_socket, p, (length * 3 + 1), LWS_WRITE_TEXT);
+	} else {
+		//printf("[Websocket] Error: Attempting to write on a closed socket\n");
 	}
-	*q = '\0';
-	n++;
-	printf("[PosixWSForward] Trying to send:\n%s \n", p);
-
-
-       for(i = 0; i < Websocket_nb_client; i++) {
-m = libwebsocket_write(Websocket_clients[i], p, (length * 3 + 1), LWS_WRITE_TEXT);
 }
-	//for(i = 0; i < Websocket_nb_client; i++) {
-	//	m = libwebsocket_write(Websocket_clients[i], p, (length * 3 + 1), LWS_WRITE_TEXT);
-	//}
-}
+
 

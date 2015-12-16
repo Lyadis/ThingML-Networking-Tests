@@ -126,7 +126,7 @@ void Serial1_forwardMessage(byte * msg, uint8_t size) {
 	send_byte(Serial1_device_id, Serial1_START_BYTE);
 	uint8_t i;
 	for(i = 0; i < size; i++) {
-		if((msg[i] == Serial1_START_BYTE) && (msg[i] == Serial1_STOP_BYTE) && (msg[i] == Serial1_ESCAPE_BYTE)) {
+		if((msg[i] == Serial1_START_BYTE) || (msg[i] == Serial1_STOP_BYTE) || (msg[i] == Serial1_ESCAPE_BYTE)) {
 	  		send_byte(Serial1_device_id, Serial1_ESCAPE_BYTE);
 		}
 		send_byte(Serial1_device_id, msg[i]);

@@ -15,10 +15,12 @@ thing fragment Msg {
 thing T1 includes Msg {
 	provided port p1{
 		sends m, m2
+		receives m, m2
 	}
 	
 	provided port p2 {
 		sends m, m2
+		receives m, m2
 	}
 
 	statechart chart init Init {
@@ -39,10 +41,12 @@ thing T1 includes Msg {
 
 thing T2 includes Msg {
 	required port p1{
+		sends m, m2
 		receives m, m2
 	}
 	
 	required port p2 {
+		sends m, m2
 		receives m, m2
 	}
 

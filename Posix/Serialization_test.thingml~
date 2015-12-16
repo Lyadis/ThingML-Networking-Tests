@@ -148,7 +148,7 @@ thing Sender includes Msgs
 }
 
 thing Receiver includes Msgs
-@trace_level "1" {
+@trace_level "0" {
 	provided port myPort {
 		sends ready
 		receives mEmpty, mChar, mBoolean, mUInt8, mUInt16, mInt16, mUInt32, mInteger, mLong, mDouble, mFloat, mEnum, mDoubleFloat
@@ -247,7 +247,7 @@ thing Receiver includes Msgs
 
 configuration Serialization_test_Cfg
 @arduino_stdout "Serial"
-@trace_level "2"
+@trace_level "0"
 {
 	instance s: Sender
 	instance r : Receiver

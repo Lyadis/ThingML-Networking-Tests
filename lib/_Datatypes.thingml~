@@ -16,7 +16,8 @@ datatype UInt8
 	
 datatype UInt16	
 	@c_type "uint16_t"
-	@c_byte_size "2";
+	@c_byte_size "2"
+	@java_type "int";
 	
 datatype Int16	
 	@c_type "int16_t"
@@ -40,7 +41,8 @@ datatype Long
 
 datatype Double	
 	@c_type "double"
-	@c_byte_size "8";
+	@c_byte_size "8"
+	@java_type "double";
 
 datatype Float	
 	@c_type "float"
@@ -81,3 +83,10 @@ thing ThingMLScheduler includes ThingMLSchedulerMsg
 		sends poll, setup
 	}
 }
+
+datatype String
+	@c_type "char *"
+	@c_byte_size "*"
+	@java_type "String"
+    @js_type "String"
+    @SenML_type "String";

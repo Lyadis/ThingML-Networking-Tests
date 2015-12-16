@@ -37,16 +37,16 @@ void Serial1_set_listener_id(uint16_t id) {
 int Serial1_setup() {
         char * device = "/dev/ttyATH0";
         uint32_t baudrate = 115200;
-        printf("[PosixWSForward] Opening Serial device %s at %ibps...\n", device, baudrate);
+        printf("[Serial1] Opening Serial device %s at %ibps...\n", device, baudrate);
 	int result;
 	struct termios port_settings;
 	result = open(device, O_RDWR | O_NOCTTY | O_NDELAY);
 	if (result < 0) {
-                printf("[PosixWSForward] Error opening Serial port\n");
+                printf("[Serial1] Error opening Serial port\n");
 		perror("Error opening Serial port");
 	}
 	else if (tcgetattr(result, &port_settings) < 0) {// try to get current options
-                printf("[PosixWSForward] Error opening Serial port: could not get serial port attributes\n");
+                printf("[Serial1] Error opening Serial port: could not get serial port attributes\n");
 		perror("Error opening Serial port: could not get serial port attributes");
 	}
 	else {
@@ -97,14 +97,14 @@ int Serial1_setup() {
 		port_settings.c_cc[VMIN] = 0;
 		port_settings.c_cc[VTIME] = 20;
 		if (tcsetattr(result, TCSANOW, &port_settings) < 0 ) {
-                    printf("[PosixWSForward] Error opening Serial port: could not set serial port attributes\n");
+                    printf("[Serial1] Error opening Serial port: could not set serial port attributes\n");
                     perror("Error opening Serial port: could not set serial port attributes");
 		}
 		sleep(1); // wait a bit
 	}
 
 	Serial1_device_id = result;
-        printf("[PosixWSForward] Serial Port %s open\n", device);
+        //printf("[Serial1] Serial Port %s open\n", device);
 }
 	
 int send_byte(int device, uint8_t byte) {
@@ -113,7 +113,7 @@ int send_byte(int device, uint8_t byte) {
 	data[0] = byte;
 	n = write(device, data, 1);
 	
-        printf("[PosixWSForward] forwarding %i with result %i\n", data[0], n);
+        //printf("[Serial1] forwarding %i with result %i\n", data[0], n);
 	if (n < 0) {
             perror("Error writing to Serial device");
             return -1;
@@ -122,11 +122,11 @@ int send_byte(int device, uint8_t byte) {
 }
 
 void Serial1_forwardMessage(byte * msg, uint8_t size) {
-        printf("[PosixWSForward] forwarding message\n");
+        //printf("[Serial1] forwarding message\n");
 	send_byte(Serial1_device_id, Serial1_START_BYTE);
 	uint8_t i;
 	for(i = 0; i < size; i++) {
-		if((msg[i] == Serial1_START_BYTE) && (msg[i] == Serial1_STOP_BYTE) && (msg[i] == Serial1_ESCAPE_BYTE)) {
+		if((msg[i] == Serial1_START_BYTE) || (msg[i] == Serial1_STOP_BYTE) || (msg[i] == Serial1_ESCAPE_BYTE)) {
 	  		send_byte(Serial1_device_id, Serial1_ESCAPE_BYTE);
 		}
 		send_byte(Serial1_device_id, msg[i]);
@@ -136,7 +136,7 @@ void Serial1_forwardMessage(byte * msg, uint8_t size) {
 	
 void Serial1_start_receiver_process()
 {
-        printf("[PosixWSForward] Starting receiver process\n");
+        printf("[Serial1] Starting receiver process\n");
 	int device = Serial1_device_id;
 	int serialListenerState = Serial1_LISTENER_STATE_IDLE;
 	char serialBuffer[Serial1_MAX_MSG_LENGTH];
@@ -150,33 +150,33 @@ void Serial1_start_receiver_process()
 		FD_SET(device, &rdfs ); // set to the esusms fd
 		n = select(device + 1, &rdfs, NULL, NULL, NULL); // NO Timeout here (last parameter)
 		if (n < 0) {
-                    printf("[PosixWSForward] Error waiting for incoming data from Serial device\n");
+                    printf("[Serial1] Error waiting for incoming data from Serial device\n");
                     perror("Error waiting for incoming data from Serial device");
                     break;
 		}
 		else if (n == 0) { // timeout
-                    printf("[PosixWSForward] Timeout waiting for incoming data from Serial device\n");
+                    printf("[Serial1] Timeout waiting for incoming data from Serial device\n");
                     break;
 		}
 		else { // there is something to read
 			n = read(device, &buffer, Serial1_INPUT_BUFFER_SIZE * sizeof(char));
 			//printf(" n=<%i>\n", n);
 			if (n<0) {
-                            printf("[PosixWSForward] Error reading from Serial device\n");
+                            printf("[Serial1] Error reading from Serial device\n");
                             perror("Error reading from Serial device");
                             break;
 			}
 			else if (n==0) {
-                            printf("[PosixWSForward] Nothing to read from Serial device\n");
+                            printf("[Serial1] Nothing to read from Serial device\n");
                             break;
 			}
 			else { // There are n incoming bytes in buffer
 				for (i = 0; i<n; i++) {
 					
-                                        printf("[PosixWSForward] byte received:%i\n", buffer[i]);
+                                        //printf("[Serial1] byte received:%i\n", buffer[i]);
 					switch(serialListenerState) {
 						case Serial1_LISTENER_STATE_IDLE:
-                                                        printf("[PosixWSForward] State:IDLE\n");
+                                                        //printf("[Serial1] State:IDLE\n");
 							if(buffer[i] == Serial1_START_BYTE) {
 							  serialListenerState = Serial1_LISTENER_STATE_READING;
 							  serialMsgSize = 0;
@@ -184,14 +184,14 @@ void Serial1_start_receiver_process()
 						break;
 
 						case Serial1_LISTENER_STATE_READING:
-                                                        printf("[PosixWSForward] State:READING\n");
+                                                        //printf("[Serial1] State:READING\n");
 							if (serialMsgSize > Serial1_MAX_MSG_LENGTH) {
 							  serialListenerState = Serial1_LISTENER_STATE_ERROR;
 							} else {
 							  if(buffer[i] == Serial1_STOP_BYTE) {
 								serialListenerState = Serial1_LISTENER_STATE_IDLE;
 
-                                                                printf("[PosixWSForward] Message received\n");
+                                                                //printf("[Serial1] Message received\n");
                                                                 externalMessageEnqueue(serialBuffer, serialMsgSize, Serial1_instance.listener_id);
 
 							  } else if (buffer[i] == Serial1_ESCAPE_BYTE) {
@@ -204,7 +204,7 @@ void Serial1_start_receiver_process()
 						break;
 
 						case Serial1_LISTENER_STATE_ESCAPE:
-                                                        printf("[PosixWSForward] State:ESCAPE\n");
+                                                        //printf("[Serial1] State:ESCAPE\n");
 							if (serialMsgSize > Serial1_MAX_MSG_LENGTH) {
 							  serialListenerState = Serial1_LISTENER_STATE_ERROR;
 							} else {
@@ -215,7 +215,7 @@ void Serial1_start_receiver_process()
 						break;
 
 						case Serial1_LISTENER_STATE_ERROR:
-                                                        printf("[PosixWSForward] Message error: Too long\n");
+                                                        printf("[Serial1] Message error: Too long\n");
 							serialListenerState = Serial1_LISTENER_STATE_IDLE;
 							serialMsgSize = 0;
 						break;

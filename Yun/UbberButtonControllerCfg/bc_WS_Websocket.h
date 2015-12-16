@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <libwebsockets.h>
 
-#include "bc_WS_Websocket.c"Websocket_instance;
+#include "bc_WS_Websocket.c" Websocket_instance;
 
 struct Websocket_instance_type Websocket_instance;
 

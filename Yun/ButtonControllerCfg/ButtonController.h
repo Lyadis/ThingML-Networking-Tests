@@ -39,10 +39,8 @@ int ButtonController_LEDControllerChart_State;
 };
 // Declaration of prototypes outgoing messages:
 void ButtonController_LEDControllerChart_OnEntry(int state, struct ButtonController_Instance *_instance);
-void ButtonController_handle_LEDport_LEDON(struct ButtonController_Instance *_instance);
-void ButtonController_handle_LEDport_LEDOFF(struct ButtonController_Instance *_instance);
-void ButtonController_handle_WS_LEDON(struct ButtonController_Instance *_instance);
-void ButtonController_handle_WS_LEDOFF(struct ButtonController_Instance *_instance);
+void ButtonController_handle_WS_LEDisON(struct ButtonController_Instance *_instance);
+void ButtonController_handle_WS_LEDisOFF(struct ButtonController_Instance *_instance);
 // Declaration of callbacks for incoming messages:
 void register_ButtonController_send_LEDport_LEDON_listener(void (*_listener)(struct ButtonController_Instance *));
 void register_external_ButtonController_send_LEDport_LEDON_listener(void (*_listener)(struct ButtonController_Instance *));
@@ -54,8 +52,6 @@ void register_ButtonController_send_WS_LEDON_listener(void (*_listener)(struct B
 void register_external_ButtonController_send_WS_LEDON_listener(void (*_listener)(struct ButtonController_Instance *));
 void register_ButtonController_send_WS_LEDOFF_listener(void (*_listener)(struct ButtonController_Instance *));
 void register_external_ButtonController_send_WS_LEDOFF_listener(void (*_listener)(struct ButtonController_Instance *));
-void register_ButtonController_send_WS_LEDControllerReady_listener(void (*_listener)(struct ButtonController_Instance *));
-void register_external_ButtonController_send_WS_LEDControllerReady_listener(void (*_listener)(struct ButtonController_Instance *));
 
 // Definition of the states:
 #define BUTTONCONTROLLER_LEDCONTROLLERCHART_STATE 0

@@ -50,12 +50,12 @@ default: break;
 }
 
 // Event Handlers for incoming messages:
-void ButtonController_handle_WS_newClient(struct ButtonController_Instance *_instance, uint16_t ClientID) {
+void ButtonController_handle_WS_LEDON(struct ButtonController_Instance *_instance) {
 uint8_t ButtonController_LEDControllerChart_State_event_consumed = 0;
 if (_instance->ButtonController_LEDControllerChart_State == BUTTONCONTROLLER_LEDCONTROLLERCHART_RUNNING_STATE) {
 if (ButtonController_LEDControllerChart_State_event_consumed == 0 && 1) {
-ButtonController_send_WS_LEDisOFF(_instance, ClientID);
-printf("[CPU] new Client: %i\n", ClientID);
+ButtonController_send_LEDport_LEDON(_instance);
+printf("[CPU] WS LEDON\n");
 ButtonController_LEDControllerChart_State_event_consumed = 1;
 }
 }
@@ -70,23 +70,12 @@ ButtonController_LEDControllerChart_State_event_consumed = 1;
 }
 }
 }
-void ButtonController_handle_WS_LEDON(struct ButtonController_Instance *_instance) {
+void ButtonController_handle_WS_newClient(struct ButtonController_Instance *_instance, uint16_t ClientID) {
 uint8_t ButtonController_LEDControllerChart_State_event_consumed = 0;
 if (_instance->ButtonController_LEDControllerChart_State == BUTTONCONTROLLER_LEDCONTROLLERCHART_RUNNING_STATE) {
 if (ButtonController_LEDControllerChart_State_event_consumed == 0 && 1) {
-ButtonController_send_LEDport_LEDON(_instance);
-printf("[CPU] WS LEDON\n");
-ButtonController_LEDControllerChart_State_event_consumed = 1;
-}
-}
-}
-void ButtonController_handle_LEDport_LEDOFF(struct ButtonController_Instance *_instance) {
-uint8_t ButtonController_LEDControllerChart_State_event_consumed = 0;
-if (_instance->ButtonController_LEDControllerChart_State == BUTTONCONTROLLER_LEDCONTROLLERCHART_RUNNING_STATE) {
-if (ButtonController_LEDControllerChart_State_event_consumed == 0 && 1) {
-ButtonController_send_LEDport_LEDOFF(_instance);
-ButtonController_send_WS_LEDisOFF(_instance,  -1);
-printf("[CPU] LEDOFF\n");
+ButtonController_send_WS_LEDisOFF(_instance, ClientID);
+printf("[CPU] new Client: %i\n", ClientID);
 ButtonController_LEDControllerChart_State_event_consumed = 1;
 }
 }
@@ -98,6 +87,17 @@ if (ButtonController_LEDControllerChart_State_event_consumed == 0 && 1) {
 ButtonController_send_LEDport_LEDON(_instance);
 ButtonController_send_WS_LEDisON(_instance,  -1);
 printf("[CPU] LEDON\n");
+ButtonController_LEDControllerChart_State_event_consumed = 1;
+}
+}
+}
+void ButtonController_handle_LEDport_LEDOFF(struct ButtonController_Instance *_instance) {
+uint8_t ButtonController_LEDControllerChart_State_event_consumed = 0;
+if (_instance->ButtonController_LEDControllerChart_State == BUTTONCONTROLLER_LEDCONTROLLERCHART_RUNNING_STATE) {
+if (ButtonController_LEDControllerChart_State_event_consumed == 0 && 1) {
+ButtonController_send_LEDport_LEDOFF(_instance);
+ButtonController_send_WS_LEDisOFF(_instance,  -1);
+printf("[CPU] LEDOFF\n");
 ButtonController_LEDControllerChart_State_event_consumed = 1;
 }
 }

@@ -39,11 +39,11 @@ int ButtonController_LEDControllerChart_State;
 };
 // Declaration of prototypes outgoing messages:
 void ButtonController_LEDControllerChart_OnEntry(int state, struct ButtonController_Instance *_instance);
-void ButtonController_handle_WS_newClient(struct ButtonController_Instance *_instance, uint16_t ClientID);
-void ButtonController_handle_WS_LEDOFF(struct ButtonController_Instance *_instance);
 void ButtonController_handle_WS_LEDON(struct ButtonController_Instance *_instance);
-void ButtonController_handle_LEDport_LEDOFF(struct ButtonController_Instance *_instance);
+void ButtonController_handle_WS_LEDOFF(struct ButtonController_Instance *_instance);
+void ButtonController_handle_WS_newClient(struct ButtonController_Instance *_instance, uint16_t ClientID);
 void ButtonController_handle_LEDport_LEDON(struct ButtonController_Instance *_instance);
+void ButtonController_handle_LEDport_LEDOFF(struct ButtonController_Instance *_instance);
 // Declaration of callbacks for incoming messages:
 void register_ButtonController_send_LEDport_LEDON_listener(void (*_listener)(struct ButtonController_Instance *));
 void register_external_ButtonController_send_LEDport_LEDON_listener(void (*_listener)(struct ButtonController_Instance *));

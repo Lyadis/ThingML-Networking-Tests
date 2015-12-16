@@ -1,5 +1,5 @@
-#ifndef Websocket_PosixWebsocketForward_h
-#define  Websocket_PosixWebsocketForward_h
+#ifndef Websocket_PosixWebsocketForwardClient_h
+#define  Websocket_PosixWebsocketForwardClient_h
 
 
 
@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <libwebsockets.h>
 
-#include "bc_WS_Websocket.c"Websocket_instance;
+#include "bc_WS_Websocket.c" Websocket_instance;
 
 struct Websocket_instance_type Websocket_instance;
 

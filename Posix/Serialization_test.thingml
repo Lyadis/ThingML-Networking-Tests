@@ -121,7 +121,10 @@ thing Sender includes Msgs
 			on entry do
 				myPort!mDouble('3.14')
 				print "[Sender] sent mDouble(3.14)"
-					'printf(" %x \n", 3.14);'
+				'printf(" %x \n", 3.14);'
+				myPort!mDouble('-3.14')
+				print "[Sender] sent mDouble(-3.14)"
+				'printf(" %x \n", -3.14);'
 			end
 			
 			transition -> Send_mLong
