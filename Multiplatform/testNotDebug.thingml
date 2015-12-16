@@ -1,0 +1,94 @@
+datatype UInt16	
+	@c_type "uint16_t"
+	@c_byte_size "2"
+	@java_type "int"
+	@java_primitive "true";
+
+datatype Double	
+	@c_type "double"
+	@c_byte_size "8"
+	@java_type "double"
+	@java_primitive "true";
+
+thing fragment Msgs {
+	message m();
+	message mInt(i : UInt16);
+	message mDouble(d : Double);
+	message m2param(i1 : UInt16, i2 : UInt16);
+}
+
+thing A includes Msgs 
+
+{
+	required port pout 
+	{
+		sends m, mInt, mDouble, m2param
+	}
+	provided port pin
+	{
+		receives m, mInt, mDouble, m2param
+	}
+
+	property v : UInt16 = 0
+
+	function myFunction() do 
+		print "MyFunction\n"
+	end
+
+	statechart Chart init Init {
+		state Init {
+			on entry do
+				print "Start\n"
+				myFunction()
+				pout!m()
+			end
+
+			on exit do
+				pout!mDouble('3.14')
+			end
+			
+			internal event e : pin?m action do
+				pout!mInt(5)
+			end
+
+			transition -> S2 event pin?mInt
+		}
+
+		state S2 {
+			transition -> S3 event pin?mDouble
+		}
+
+		state S3 {
+			transition -> S3etDemi
+		}
+
+		state S3etDemi {
+			internal guard (v == 0) action v = v + 1
+			transition -> S4 guard not(v == 0)
+		}
+
+		state S4 {
+			transition -> S5 action print "transition\n"
+		}
+
+		state S5 {
+			on entry do
+				pout!m2param(2,3)
+			end
+			
+			internal event pin?m2param 
+			action print "Done\n"
+		}
+	}
+}
+
+configuration testNotDebug 
+@arduino_stdout "Serial"
+{
+	instance a : A
+	instance b : A
+
+
+	connector a.pout => a.pin
+	connector b.pout => b.pin
+}

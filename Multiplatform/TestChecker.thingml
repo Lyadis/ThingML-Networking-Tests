@@ -1,0 +1,81 @@
+datatype UInt8	
+	@c_type "uint8_t"
+	@c_byte_size "1";
+
+datatype P	
+	@c_type "uint8_t *"
+	@c_byte_size "*";
+
+thing fragment Msgs {
+	message m1(i : P);
+	message m2();
+	message m3();
+}
+
+thing T includes Msgs {
+	property a : UInt8
+	
+	provided port pin @sync_send "true" {
+		receives m1, m2
+	}
+	required port pout {
+		sends m1, m3
+	}
+
+	statechart Chart init S1 {
+		state S1 {
+			on entry do
+				print "S1\n"
+				pout!m1()
+			end
+
+			transition -> S2 event pin?m1
+		}
+		
+		state S2 {
+			on entry print "S2\n"
+			transition -> S4
+		}
+	
+		state S3 {
+			transition -> S4 event pin?m1 guard 'true'
+			transition -> S4 event pin?m1
+		}
+	
+		state S4 {
+			transition -> S3
+		}
+	}
+}
+
+thing fragment UnUsed {}
+thing UnUsed2 {}
+thing UnUsed3 {
+	statechart C init S {
+		state S{
+			on entry print "UnUsed3\n"
+		}
+	}
+}
+
+configuration TestChecker {
+	instance t1 : T
+	instance t2 : T
+	instance t3 : T
+	instance t4 : T
+	instance t5 : T
+
+	instance t6 : T
+	instance t7 : T
+	instance t8 : T
+
+	connector t1.pout => t2.pin
+	connector t2.pout => t3.pin
+	connector t3.pout => t4.pin
+	connector t4.pout => t5.pin
+	connector t5.pout => t6.pin
+
+	connector t6.pout => t7.pin
+	connector t7.pout => t8.pin
+	connector t8.pout => t2.pin
+}

@@ -1,0 +1,56 @@
+thing fragment Msgs {
+	message m();
+	message poutReady() @websocket_connector_ready "";
+}
+
+thing antisocial includes Msgs {
+	required port pout {
+		sends m
+		receives poutReady
+	}
+	provided port pin {
+		receives m
+	}
+	statechart Chart init Init {
+		state Init {
+			on entry do
+				print "[antisocial] Init\n"
+			end
+			
+			transition -> Sending event pout?poutReady
+		}
+		state Sending {
+			on entry do
+				pout!m()
+				print "[antisocial] sent m\n"
+			end
+			
+			internal event pin?m action do
+				print "[antisocial] received m\n"
+			end
+		}
+	}
+}
+
+configuration selfCfg
+@c_compiler "/openwrt-yun/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/bin/mips-openwrt-linux-gcc"
+@add_c_libraries "websockets"
+@add_c_libraries "ssl"
+@add_c_libraries "crypto"
+@add_c_libraries "z"
+@add_c_libraries_rep "/openwrt-yun/staging_dir/target-mips_r2_uClibc-0.9.33.2/lib"
+@add_c_libraries_rep "/openwrt-yun/staging_dir/target-mips_r2_uClibc-0.9.33.2/usr/lib"
+@add_c_flags "-I/openwrt-yun/staging_dir/target-mips_r2_uClibc-0.9.33.2/usr/include"
+@add_c_flags "-I/openwrt-yun/staging_dir/target-mips_r2_uClibc-0.9.33.2/include"
+{
+	instance a : antisocial
+
+	connector a.pin over Websocket
+	@port_name "WSServer"
+	@websocket_trace_level "3"
+
+	connector a.pout over Websocket
+	@port_name "WSClient"
+	@websocket_trace_level "3"
+	@websocket_client "true"
+}

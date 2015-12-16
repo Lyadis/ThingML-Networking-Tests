@@ -1,0 +1,105 @@
+import "../lib/_Datatypes.thingml"
+
+thing fragment Msgs {
+	message mDouble(p : Double);
+	message ready();
+	message ClientReady() @websocket_connector_ready "";
+	message SrvReady() @websocket_server_ready "";
+	message ClientReset() @webosocket_client_connexion_reset "";
+}
+
+thing Sender includes Msgs
+@trace_level "2" {
+	required port myPort {
+		receives ClientReady
+		sends  mDouble, ClientReset
+	}
+
+	required port SrvReady {
+		receives ready
+	}
+
+	property myI : UInt16 = 13
+	statechart SenderChart init Init {
+		state Init {
+			on entry do
+				print "[Sender] Ready\n"
+			end
+			transition -> Reseting event SrvReady?ready action do
+				print "[Sender] received ready\n"
+				myPort!ClientReset()
+			end
+		}
+		state Reseting {
+			on entry do
+				print "[Sender] Reseting\n"
+			end
+
+			transition -> Send_mDouble event myPort?ClientReady action do
+				print "[Sender] received ready\n"
+			end
+		}
+		state Send_mDouble {
+			on entry do
+				myPort!mDouble('3.14')
+				print "[Sender] sent mDouble(3.14)"
+				'printf(" %x \n", 3.14);'
+				myPort!mDouble('-3.14')
+				print "[Sender] sent mDouble(-3.14)"
+				'printf(" %x \n", -3.14);'
+			end
+		}
+	}
+}
+
+thing Receiver includes Msgs
+@trace_level "0" {
+	provided port myPort {
+		receives mDouble, SrvReady
+	}
+
+	provided port SrvReady {
+		sends ready
+	}
+
+
+	statechart SenderChart init Init {
+		state Init {
+			on entry do
+				print "[Receiver] Ready\n"
+			end
+		internal event myPort?SrvReady action do
+			print "[Receiver] Server Ready\n"
+			SrvReady!ready()
+		end
+		internal event e : myPort?mDouble action do
+			print "[Receiver] received mDouble "
+			'printf(" %f",'& e.p &');'
+			'printf(" %x",'& e.p &');'
+			print "\n"
+		end
+		
+		}
+	}
+}
+
+configuration DSerialization_test_Cfg
+@add_c_libraries "websockets"
+@add_c_libraries "ssl"
+@add_c_libraries "crypto"
+@add_c_libraries "z"
+@add_c_flags "-I/usr/include/nopoll"
+@add_c_libraries "nopoll" 
+{
+	instance s: Sender
+	instance r : Receiver
+	
+	connector s.SrvReady => r.SrvReady
+
+	connector r.myPort over Websocket
+	@port_name "WSServer"
+
+	connector s.myPort over NopollWS
+	@port_name "WSC1"
+	@websocket_client "true"
+}

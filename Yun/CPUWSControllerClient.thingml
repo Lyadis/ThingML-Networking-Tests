@@ -1,0 +1,66 @@
+import "Msgs.thingml"
+import "../lib/_Datatypes.thingml"
+
+configuration ButtonControllerCfg
+@c_compiler "/openwrt-yun/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/bin/mips-openwrt-linux-gcc"
+@add_c_libraries "websockets"
+@add_c_libraries "ssl"
+@add_c_libraries "crypto"
+@add_c_libraries "z"
+@add_c_libraries_rep "/openwrt-yun/staging_dir/target-mips_r2_uClibc-0.9.33.2/lib"
+@add_c_libraries_rep "/openwrt-yun/staging_dir/target-mips_r2_uClibc-0.9.33.2/usr/lib"
+@add_c_flags "-I/openwrt-yun/staging_dir/target-mips_r2_uClibc-0.9.33.2/usr/include"
+@add_c_flags "-I/openwrt-yun/staging_dir/target-mips_r2_uClibc-0.9.33.2/include"
+{
+	instance bc : ButtonController
+	
+	connector bc.LEDport over Serial1
+	@serial_trace_level "3"
+	@serial_path_to_device "/dev/ttyATH0"
+	@serial_baudrate "115200"
+	
+	connector bc.WS over Websocket
+	@websocket_trace_level "3"
+	@websocket_client "true"
+	@websocket_server_address "192.168.1.108"
+}
+
+thing fragment WSMsgs {
+	message LEDisON() @code "101";
+	message LEDisOFF() @code "102";
+}
+
+thing ButtonController includes Msgs, WSMsgs
+{
+	
+	required port LEDport {
+		receives LEDControllerReady
+		sends LEDON, LEDOFF, LEDControllerReady
+	}
+	
+	required port WS {
+		receives LEDisON, LEDisOFF
+		sends LEDON, LEDOFF
+	}
+	
+	statechart LEDControllerChart init Init {
+		state Init {
+			on entry do
+				'printf("[CPU] Init\n");'
+			end
+			transition -> Running
+		}
+		
+		state Running {
+			internal event WS?LEDisON action do
+				LEDport!LEDON()
+				'printf("[CPU] WS LEDisON\n");'
+			end
+			internal event WS?LEDisOFF action do
+				LEDport!LEDOFF()
+				'printf("[CPU] WS LEDisOFF\n");'
+			end
+		}
+	}
+}
+

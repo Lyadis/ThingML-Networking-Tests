@@ -1,0 +1,42 @@
+thing fragment Msgs {
+	message m() @code "55";
+	message coReady() @websocket_connector_ready "";
+}
+
+thing antisocial includes Msgs {
+	provided port p {
+		sends m
+		receives m, coReady
+	}
+	statechart Chart init Init {
+		state Init {
+			on entry do
+				print "[antisocial] Init\n"
+			end
+			internal event p?coReady action do
+				p!m()
+				print "[antisocial] sent m\n"
+			end
+		
+			
+			internal event p?m action do
+				print "[antisocial] received m\n"
+			end
+		}
+	}
+}
+
+configuration WSClientCfg
+@add_c_libraries "websockets"
+@add_c_libraries "ssl"
+@add_c_libraries "crypto"
+@add_c_libraries "z"
+{
+	instance a : antisocial
+
+	connector a.p over Websocket
+	@port_name "WSClient"
+	@websocket_client "true"
+	@websocket_trace_level "3"
+
+}

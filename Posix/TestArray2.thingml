@@ -1,0 +1,36 @@
+import "../lib/_Datatypes.thingml"
+
+configuration testArrayCfg2 {
+	instance a : A
+	set a.c = 5 + 0
+	instance b : A
+	set b.c = 5 + 5
+	instance d : A
+}
+
+thing A {
+	readonly property c : UInt16 = 2+2
+	property ar : UInt16[c]
+	
+	statechart c init s {
+		state s {
+			on entry do
+				print "Begin\n"
+				
+				var n : UInt16 = 0
+				while(n < c) do
+					ar[n] = n
+					n = n + 1
+				end
+				n = 0
+
+				while(n < c) do
+					'printf("ar['&n&'] = %i\n", '&ar[n]&');'
+					n = n + 1
+				end
+				
+				print "End\n\n"
+			end
+		}
+	}
+}

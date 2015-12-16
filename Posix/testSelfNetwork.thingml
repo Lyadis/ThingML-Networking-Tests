@@ -1,0 +1,63 @@
+thing fragment Msgs {
+	message m();
+	message poutReady() @websocket_connector_ready "";
+	message pinReady() @websocket_server_ready "";
+	message poutReset() @webosocket_client_connexion_reset "";
+}
+
+thing antisocial includes Msgs {
+	required port pout {
+		sends m, poutReset
+		receives poutReady
+	}
+	provided port pin {
+		receives m, pinReady
+	}
+	statechart Chart init Init {
+		state Init {
+			on entry do
+				print "[antisocial] Init\n"
+			end
+			
+			transition -> EstablishingCo event pin?pinReady
+		}
+
+		state EstablishingCo {
+			on entry do
+				print "[antisocial] EstablishingCo\n"
+				pout!poutReset()
+			end
+			
+			transition -> Sending event pout?poutReady
+		}
+
+		state Sending {
+			on entry do
+				pout!m()
+				print "[antisocial] sent m\n"
+			end
+			
+			internal event pin?m action do
+				print "[antisocial] received m\n"
+			end
+		}
+	}
+}
+
+configuration selfCfg
+@add_c_libraries "websockets"
+@add_c_libraries "ssl"
+@add_c_libraries "crypto"
+@add_c_libraries "z"
+@add_c_flags "-I/usr/include/nopoll"
+@add_c_libraries "nopoll"
+{
+	instance a : antisocial
+
+	connector a.pin over Websocket
+	@port_name "WSServer"
+
+	connector a.pout over NopollWS
+	@port_name "WSClient"
+	@websocket_client "true"
+}

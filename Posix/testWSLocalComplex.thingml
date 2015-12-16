@@ -1,0 +1,79 @@
+thing fragment Msgs {
+	message m();
+	message m2();
+	message ClientReady() @websocket_connector_ready "";
+	message SrvReady() @websocket_server_ready "";
+	message ClientReset() @webosocket_client_connexion_reset "";
+}
+
+thing Server includes Msgs 
+@debug "true"
+{
+	provided port SrvReady{
+		sends SrvReady
+	}
+	provided port WSD {
+		sends m
+		receives m, m2, SrvReady
+	}
+
+	statechart SChart init I {
+		state I {
+			internal event WSD?SrvReady action SrvReady!SrvReady()
+			internal event WSD?m action WSD!m()
+			internal event WSD?m2 action print "m2\n"
+		}
+	}
+}
+
+thing Client includes Msgs 
+@debug "true"
+{
+
+	required port WSD {
+		sends m, m2, ClientReset
+		receives m, ClientReady
+	}
+
+	required port SrvReady {
+		receives SrvReady
+	}
+
+	statechart CChart init I {
+		state I {
+			internal event SrvReady?SrvReady action WSD!ClientReset()
+			internal event WSD?ClientReady action WSD!m()
+			internal event WSD?m action WSD!m2()
+		}
+	}
+}
+
+
+
+configuration WSLocal
+@add_c_libraries "websockets"
+@add_c_libraries "ssl"
+@add_c_libraries "crypto"
+@add_c_libraries "z"
+@add_c_flags "-I/usr/include/nopoll"
+@add_c_libraries "nopoll" 
+{
+	group WSdep : WS
+	instance S : Server
+	instance c1 : Client
+
+	connector c1.SrvReady => S.SrvReady
+
+	connector S.WSD over Websocket
+	@port_name "WSServer"
+
+	connector c1.WSD over NopollWS
+	@port_name "WSC1"
+	@websocket_client "true"
+
+	instance c2 : Client
+	connector c2.SrvReady => S.SrvReady
+	connector c2.WSD over NopollWS
+	@port_name "WSC2"
+	@websocket_client "true"
+}

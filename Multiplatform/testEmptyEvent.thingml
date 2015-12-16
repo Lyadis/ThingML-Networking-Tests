@@ -1,0 +1,33 @@
+configuration testEmptyEventCfg 
+@arduino_stdout "Serial"
+{
+    instance t : Test
+}
+
+thing Test {
+    statechart testChart init S0 {
+            on entry do
+                print "[Test] Entering testChart\n"
+            end
+        state S0 {
+            on entry do
+                print "[Test] Entering S0\n"
+            end
+
+            transition -> S1
+        }
+        state S1 {
+            on entry do
+                print "[Test] Entering S1\n"
+            end
+
+            transition -> S2
+        }
+        state S2 {
+            on entry do
+                print "[Test] Entering S2\n"
+            end
+
+        }
+    }
+}

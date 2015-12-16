@@ -1,0 +1,29 @@
+import "../lib/_Datatypes.thingml"
+
+configuration testArrayCfg {
+	instance a : A
+}
+
+thing A {
+	property ar : UInt16[5]
+	
+	statechart c init s {
+		state s {
+			on entry do
+				print "Begin\n"
+				ar[0] = 0
+				ar[1] = 1
+				ar[2] = 2
+				ar[3] = 3
+				ar[4] = 4
+
+				'printf("ar[0] = %i\n", '&ar[0]&');'
+				'printf("ar[1] = %i\n", '&ar[1]&');'
+				'printf("ar[2] = %i\n", '&ar[2]&');'
+				'printf("ar[3] = %i\n", '&ar[3]&');'
+				'printf("ar[4] = %i\n", '&ar[4]&');'
+				print "End\n\n"
+			end
+		}
+	}
+}

@@ -1,0 +1,49 @@
+import "../lib/_Datatypes.thingml"
+
+configuration TestArrayMessageCfg 
+@debug "true"
+{
+	instance t : Tester
+	connector t.out => t.in
+}
+
+thing Tester {
+	message m(tab : UInt8[4]);
+	
+	provided port in 
+	@sync_send "true"
+	{
+		receives m
+	}
+	
+	required port out
+	@sync_send "true"
+	{
+		sends m
+	}
+
+	property ar : UInt8[4]
+
+	statechart myChart init Init {
+		state Init {
+			on entry do
+				print "[Tester] Init\n"
+				ar[0] = 0
+				ar[1] = 1
+				ar[2] = 2
+				ar[3] = 3
+				out!m(ar)
+				print "[Tester][out] sent m(ar)\n"
+			end
+
+			internal event e : in?m action do
+				print "[Tester][in] received m"
+				'uint8_t c = 0;
+				for(c = 0; c < 4; c++) {
+					printf("[array] %i:%i\n", c, '&e.tab&'[c]);
+				}
+				'
+			end
+		}
+	}
+}

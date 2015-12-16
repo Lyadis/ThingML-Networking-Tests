@@ -1,0 +1,38 @@
+thing fragment Msgs {
+	message m() @code "55";
+}
+
+thing antisocial includes Msgs {
+	provided port p {
+		sends m
+		receives m
+	}
+	statechart Chart init Init {
+		state Init {
+			on entry do
+				print "[antisocial] Init\n"
+			end
+		
+			
+			internal event p?m action do
+				print "[antisocial] received m\n"
+				p!m()
+				print "[antisocial] sent m\n"
+			end
+		}
+	}
+}
+
+configuration WSCfg
+@add_c_libraries "websockets"
+@add_c_libraries "ssl"
+@add_c_libraries "crypto"
+@add_c_libraries "z"
+{
+	instance a : antisocial
+
+	connector a.p over Websocket
+	@port_name "WSServer"
+	@websocket_trace_level "3"
+
+}

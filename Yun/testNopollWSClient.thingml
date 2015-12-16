@@ -1,0 +1,47 @@
+thing fragment Msgs {
+	message LEDON() @code "66";
+	message LEDOFF() @code "67";
+	message LEDisON() @code "101";
+	message LEDisOFF() @code "102";
+	message coReady() @websocket_connector_ready "";
+}
+
+thing WSClient includes Msgs {
+	provided port p {
+		sends LEDON, LEDOFF
+		receives LEDisON, LEDisOFF, coReady
+	}
+	statechart Chart init Init {
+		state Init {
+			on entry do
+				print "[Client] Init\n"
+			end
+
+			internal event p?coReady action do
+				p!LEDON()
+				print "[Client] sent LEDON\n"
+			end
+
+			internal event p?LEDisON action do
+				print "[Client] received LEDisON\n"
+			end
+
+			internal event p?LEDisOFF action do
+				print "[Client] received LEDisOFF\n"
+			end
+		}
+	}
+}
+
+configuration NopollWSClientCfg
+@add_c_libraries "nopoll"
+@add_c_flags "-I/usr/include/nopoll"
+{
+	instance a : WSClient
+
+	connector a.p over NopollWS
+	@websocket_client "true"
+	@websocket_server_address "192.168.1.109"
+	@websocket_port_number "9000"
+
+}

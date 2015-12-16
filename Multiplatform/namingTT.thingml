@@ -1,0 +1,32 @@
+thing fragment Msgs {
+	message T();
+}
+
+thing T includes Msgs {
+	required port T {
+		sends T
+	}
+	provided port pin {
+		receives T
+	}
+	statechart Chart init Init {
+		state Init {
+			on entry do
+				print "[antisocial] Init\n"
+				T!T()
+				print "[antisocial] sent T\n"
+			end
+			
+			internal event pin?T action do
+				print "[antisocial] received T\n"
+			end
+		}
+	}
+}
+
+configuration T 
+@arduino_stdout "Serial"
+{
+	instance T : T
+	connector T.T => T.pin
+}

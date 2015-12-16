@@ -1,0 +1,40 @@
+thing TestEmptyInternalTransition
+{
+		
+		message m();
+
+		provided port in { receives m }
+		required port out { sends m }
+
+	statechart TestEmptyInternalTransition init S1 {
+		property i : UInt16 = '0'
+
+		state S1 {
+			on entry print "Start\n"
+			internal
+			guard (i == 0)
+			action do
+				print "Internal Empty transition\n"
+				i = i + '1'
+			end
+			
+			transition -> S2 guard (not(i == 0))
+		}
+
+
+		state S2 {
+			on entry print "Done\n"
+		}
+	}
+}
+
+datatype UInt16	
+	@c_type "uint16_t"
+	@c_byte_size "2"
+	@java_type "int"
+	@java_primitive "true";
+
+configuration TestEmptyInternalTransitionCfg {
+	instance  t:  TestEmptyInternalTransition
+	connector t.out => t.in
+}

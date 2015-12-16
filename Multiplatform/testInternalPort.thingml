@@ -1,0 +1,26 @@
+thing T {
+	message m();
+	
+	internal port p {
+		sends m
+		receives m
+	}
+
+	statechart C init S {
+		state S {
+			on entry do 
+				print "[S] Init\n"
+				p!m()
+			end
+
+			internal event p?m action print "[T] received m\n"
+			
+		}
+	}
+}
+
+configuration C 
+@arduino_stdout "Serial"
+{
+	instance i : T
+}
