@@ -1,0 +1,20 @@
+import "Msgs.thingml"
+
+thing Repondeur includes Msgs {
+	required port p {
+		sends m
+		receives m
+	}
+
+	statechart RChart init Active {
+		state Active {
+			internal event p?m
+			action p!m() 
+		}
+	}
+}
+
+configuration Repondeur {
+	instance r : Repondeur
+	connector r.p over Serial1
+}

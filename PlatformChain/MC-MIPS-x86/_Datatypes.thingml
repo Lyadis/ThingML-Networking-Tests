@@ -1,0 +1,45 @@
+datatype Char	
+	@c_type "char"
+	@c_byte_size "1";
+    
+datatype Boolean	
+	@c_type "uint8_t"
+	@c_byte_size "1";
+
+datatype UInt8	
+	@c_type "uint8_t"
+	@c_byte_size "1";
+	
+datatype UInt16	
+	@c_type "uint16_t"
+	@c_byte_size "2";
+	
+datatype Int16	
+	@c_type "int16_t"
+	@c_byte_size "2";
+	
+datatype UInt32	
+	@c_type "uint32_t"
+	@c_byte_size "4";
+	
+datatype Int32
+	@c_type "int32_t"
+	@c_byte_size "2";
+
+datatype Double	
+	@c_type "double"
+	@c_byte_size "8";
+
+datatype Float	
+	@c_type "float"
+	@c_byte_size "4";
+	
+datatype Byte	
+	@c_type "uint8_t"
+	@c_byte_size "1"
+	@java_type "byte"
+	@java_primitive "true"
+    @scala_type "Byte"
+    @SenML_type "Double";
+
+

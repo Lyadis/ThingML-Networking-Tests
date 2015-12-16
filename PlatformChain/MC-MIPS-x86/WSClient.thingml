@@ -1,0 +1,42 @@
+import "Msgs.thingml"
+
+thing Client includes Msgs {
+
+	message coReady() @websocket_connector_ready "";
+
+	provided port p {
+		sends m
+		receives m, coReady
+	}
+	statechart Chart init Init {
+		state Init {
+			on entry do
+				print "[Client] Init\n"
+			end
+			internal event p?coReady action do
+				p!m()
+				print "[Client] sent m\n"
+			end
+		
+			
+			internal event p?m action do
+				print "[Client] received m\n"
+			end
+		}
+	}
+}
+
+configuration WSCfg
+@add_c_libraries "websockets"
+@add_c_libraries "ssl"
+@add_c_libraries "crypto"
+@add_c_libraries "z"
+{
+	instance c : Client
+
+	connector c.p over Websocket
+	@websocket_client "true"
+	@websocket_server_address "192.168.1.108"
+	@websocket_trace_level "1"
+
+}

@@ -1,0 +1,5 @@
+import "_Datatypes.thingml"
+
+thing fragment Msgs {
+	message m() @code "5";
+}

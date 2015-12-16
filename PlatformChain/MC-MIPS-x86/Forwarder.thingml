@@ -1,0 +1,49 @@
+import "Msgs.thingml"
+
+thing Forwarder includes Msgs {
+	required port toLinux {
+		sends m
+		receives m
+	}
+	required port Serial {
+		sends m
+		receives m
+	}
+
+	statechart RChart init Active {
+		state Active {
+			on entry print "[Forwarder] Init\n"
+			internal event Serial?m action do 
+				toLinux!m()
+				print "[Forwarder] Serial.m -> toLinux.m\n"
+			end
+
+			internal event toLinux?m action do 
+				Serial!m() 
+				print "[Forwarder] Serial.m <- toLinux.m\n"
+			end
+		}
+	}
+}
+
+configuration Forwarder
+@c_compiler "/openwrt-yun/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/bin/mips-openwrt-linux-gcc"
+@add_c_libraries "websockets"
+@add_c_libraries "ssl"
+@add_c_libraries "crypto"
+@add_c_libraries "z"
+@add_c_libraries_rep "/openwrt-yun/staging_dir/target-mips_r2_uClibc-0.9.33.2/lib"
+@add_c_libraries_rep "/openwrt-yun/staging_dir/target-mips_r2_uClibc-0.9.33.2/usr/lib"
+@add_c_flags "-I/openwrt-yun/staging_dir/target-mips_r2_uClibc-0.9.33.2/usr/include"
+@add_c_flags "-I/openwrt-yun/staging_dir/target-mips_r2_uClibc-0.9.33.2/include"
+{
+	instance f : Forwarder
+
+	connector f.Serial over Serial1
+	@serial_trace_level "1"
+	@serial_path_to_device "/dev/ttyATH0"
+	@serial_baudrate "115200"
+
+	connector f.toLinux over Websocket
+	@websocket_trace_level "3"
+}
