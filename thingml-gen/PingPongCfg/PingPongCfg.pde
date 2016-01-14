@@ -4,8 +4,8 @@
 
 // Definition of the instance stuct:
 struct PingClient_Instance {
-// Variables for the ID of the instance
-int id;
+// Variables for the ID of the ports of the instance
+uint16_t id_ping_service;
 // Variables for the current instance state
 int PingClient_PingClientMachine_State;
 // Variables for the properties of the instance
@@ -16,6 +16,7 @@ void PingClient_PingClientMachine_OnEntry(int state, struct PingClient_Instance 
 void PingClient_handle_ping_service_pong(struct PingClient_Instance *_instance);
 // Declaration of callbacks for incoming messages:
 void register_PingClient_send_ping_service_ping_listener(void (*_listener)(struct PingClient_Instance *));
+void register_external_PingClient_send_ping_service_ping_listener(void (*_listener)(struct PingClient_Instance *));
 
 // Definition of the states:
 #define PINGCLIENT_PINGCLIENTMACHINE_STATE 0
@@ -30,8 +31,8 @@ void register_PingClient_send_ping_service_ping_listener(void (*_listener)(struc
 
 // Definition of the instance stuct:
 struct PingServer_Instance {
-// Variables for the ID of the instance
-int id;
+// Variables for the ID of the ports of the instance
+uint16_t id_ping_service;
 // Variables for the current instance state
 int PingServer_PongServerMachine_State;
 // Variables for the properties of the instance
@@ -42,6 +43,7 @@ void PingServer_PongServerMachine_OnEntry(int state, struct PingServer_Instance 
 void PingServer_handle_ping_service_ping(struct PingServer_Instance *_instance);
 // Declaration of callbacks for incoming messages:
 void register_PingServer_send_ping_service_pong_listener(void (*_listener)(struct PingServer_Instance *));
+void register_external_PingServer_send_ping_service_pong_listener(void (*_listener)(struct PingServer_Instance *));
 
 // Definition of the states:
 #define PINGSERVER_PONGSERVERMACHINE_STATE 0
@@ -72,7 +74,7 @@ int _fifo_enqueue(byte b);
    The caller should check that the fifo is not empty */
 byte fifo_dequeue();
 
-#define MAX_INSTANCES 2
+#define MAX_INSTANCES 4
 #define FIFO_SIZE 256
 
 /*********************************
@@ -163,18 +165,18 @@ void PingClient_PingClientMachine_OnEntry(int state, struct PingClient_Instance 
 switch(state) {
 case PINGCLIENT_PINGCLIENTMACHINE_STATE:
 _instance->PingClient_PingClientMachine_State = PINGCLIENT_PINGCLIENTMACHINE_PING_STATE;
-// PRINT ERROR: "Ping Client Started!\n"
+Serial.print("Ping Client Started!\n");
 PingClient_PingClientMachine_OnEntry(_instance->PingClient_PingClientMachine_State, _instance);
 break;
 case PINGCLIENT_PINGCLIENTMACHINE_PING_STATE:
-// PRINT ERROR: "Send Ping..."
+Serial.print("Send Ping...\n");
 PingClient_send_ping_service_ping(_instance);
 break;
 case PINGCLIENT_PINGCLIENTMACHINE_PONG_STATE:
-// PRINT ERROR: "Got pong!\n"
+Serial.print("Got pong!\n");
 break;
 case PINGCLIENT_PINGCLIENTMACHINE_STOP_STATE:
-// PRINT ERROR: "Bye.\n"
+Serial.print("Bye.\n");
 break;
 default: break;
 }
@@ -208,23 +210,31 @@ PingClient_PingClientMachine_State_event_consumed = 1;
 }
 }
 }
-void PingClient_handle_empty_event(struct PingClient_Instance *_instance) {
+int PingClient_handle_empty_event(struct PingClient_Instance *_instance) {
 if (_instance->PingClient_PingClientMachine_State == PINGCLIENT_PINGCLIENTMACHINE_PONG_STATE) {
 if (1) {
 PingClient_PingClientMachine_OnExit(PINGCLIENT_PINGCLIENTMACHINE_PONG_STATE, _instance);
 _instance->PingClient_PingClientMachine_State = PINGCLIENT_PINGCLIENTMACHINE_STOP_STATE;
 PingClient_PingClientMachine_OnEntry(PINGCLIENT_PINGCLIENTMACHINE_STOP_STATE, _instance);
+return 1;
 }
 }
+return 0;
 }
 
 // Observers for outgoing messages:
+void (*external_PingClient_send_ping_service_ping_listener)(struct PingClient_Instance *)= 0x0;
+void register_external_PingClient_send_ping_service_ping_listener(void (*_listener)(struct PingClient_Instance *)){
+external_PingClient_send_ping_service_ping_listener = _listener;
+}
 void (*PingClient_send_ping_service_ping_listener)(struct PingClient_Instance *)= 0x0;
 void register_PingClient_send_ping_service_ping_listener(void (*_listener)(struct PingClient_Instance *)){
 PingClient_send_ping_service_ping_listener = _listener;
 }
 void PingClient_send_ping_service_ping(struct PingClient_Instance *_instance){
 if (PingClient_send_ping_service_ping_listener != 0x0) PingClient_send_ping_service_ping_listener(_instance);
+if (external_PingClient_send_ping_service_ping_listener != 0x0) external_PingClient_send_ping_service_ping_listener(_instance);
+;
 }
 
 
@@ -243,7 +253,7 @@ void PingServer_PongServerMachine_OnEntry(int state, struct PingServer_Instance 
 switch(state) {
 case PINGSERVER_PONGSERVERMACHINE_STATE:
 _instance->PingServer_PongServerMachine_State = PINGSERVER_PONGSERVERMACHINE_ACTIVE_STATE;
-// PRINT ERROR: "Ping Server Started!\n"
+Serial.print("Ping Server Started!\n");
 PingServer_PongServerMachine_OnEntry(_instance->PingServer_PongServerMachine_State, _instance);
 break;
 case PINGSERVER_PONGSERVERMACHINE_ACTIVE_STATE:
@@ -270,18 +280,25 @@ uint8_t PingServer_PongServerMachine_State_event_consumed = 0;
 if (_instance->PingServer_PongServerMachine_State == PINGSERVER_PONGSERVERMACHINE_ACTIVE_STATE) {
 if (PingServer_PongServerMachine_State_event_consumed == 0 && 1) {
 PingServer_send_ping_service_pong(_instance);
+Serial.print("Server received ping\n");
 PingServer_PongServerMachine_State_event_consumed = 1;
 }
 }
 }
 
 // Observers for outgoing messages:
+void (*external_PingServer_send_ping_service_pong_listener)(struct PingServer_Instance *)= 0x0;
+void register_external_PingServer_send_ping_service_pong_listener(void (*_listener)(struct PingServer_Instance *)){
+external_PingServer_send_ping_service_pong_listener = _listener;
+}
 void (*PingServer_send_ping_service_pong_listener)(struct PingServer_Instance *)= 0x0;
 void register_PingServer_send_ping_service_pong_listener(void (*_listener)(struct PingServer_Instance *)){
 PingServer_send_ping_service_pong_listener = _listener;
 }
 void PingServer_send_ping_service_pong(struct PingServer_Instance *_instance){
 if (PingServer_send_ping_service_pong_listener != 0x0) PingServer_send_ping_service_pong_listener(_instance);
+if (external_PingServer_send_ping_service_pong_listener != 0x0) external_PingServer_send_ping_service_pong_listener(_instance);
+;
 }
 
 
@@ -294,50 +311,74 @@ if (PingServer_send_ping_service_pong_listener != 0x0) PingServer_send_ping_serv
  *****************************************************************************/
 
 //Declaration of instance variables
-struct PingClient_Instance PingPongCfg_client_var;
-struct PingServer_Instance PingPongCfg_server_var;
+//Instance PingPongCfg_client2
+// Variables for the properties of the instance
+struct PingClient_Instance PingPongCfg_client2_var;
+//Instance PingPongCfg_client1
+// Variables for the properties of the instance
+struct PingClient_Instance PingPongCfg_client1_var;
+//Instance PingPongCfg_server2
+// Variables for the properties of the instance
+struct PingServer_Instance PingPongCfg_server2_var;
+//Instance PingPongCfg_server1
+// Variables for the properties of the instance
+struct PingServer_Instance PingPongCfg_server1_var;
 
-// Enqueue of messages PingClient::ping_service::ping
-void enqueue_PingClient_send_ping_service_ping(struct PingClient_Instance *_instance){
-//[sendFunction]
-//hasAnnotation
+// Enqueue of messages PingServer::ping_service::pong
+void enqueue_PingServer_send_ping_service_pong(struct PingServer_Instance *_instance){
 if ( fifo_byte_available() > 4 ) {
 
 _fifo_enqueue( (1 >> 8) & 0xFF );
 _fifo_enqueue( 1 & 0xFF );
 
-// ID of the source instance
-_fifo_enqueue( (_instance->id >> 8) & 0xFF );
-_fifo_enqueue( _instance->id & 0xFF );
+// ID of the source port of the instance
+_fifo_enqueue( (_instance->id_ping_service >> 8) & 0xFF );
+_fifo_enqueue( _instance->id_ping_service & 0xFF );
 }
 }
-// Enqueue of messages PingServer::ping_service::pong
-void enqueue_PingServer_send_ping_service_pong(struct PingServer_Instance *_instance){
-//[sendFunction]
-//hasAnnotation
+// Enqueue of messages PingClient::ping_service::ping
+void enqueue_PingClient_send_ping_service_ping(struct PingClient_Instance *_instance){
 if ( fifo_byte_available() > 4 ) {
 
 _fifo_enqueue( (2 >> 8) & 0xFF );
 _fifo_enqueue( 2 & 0xFF );
 
-// ID of the source instance
-_fifo_enqueue( (_instance->id >> 8) & 0xFF );
-_fifo_enqueue( _instance->id & 0xFF );
+// ID of the source port of the instance
+_fifo_enqueue( (_instance->id_ping_service >> 8) & 0xFF );
+_fifo_enqueue( _instance->id_ping_service & 0xFF );
 }
 }
 
-// Dispatch for messages PingServer::ping_service::pong
-void dispatch_PingServer_send_ping_service_pong(struct PingServer_Instance *_instance){
-if (_instance == &PingPongCfg_server_var) {
-PingClient_handle_ping_service_pong(&PingPongCfg_client_var);
+
+//New dispatcher for messages
+void dispatch_pong(uint16_t sender) {
+if (sender == PingPongCfg_server1_var.id_ping_service) {
+PingClient_handle_ping_service_pong(&PingPongCfg_client1_var);
+PingClient_handle_ping_service_pong(&PingPongCfg_client2_var);
+
 }
+if (sender == PingPongCfg_server2_var.id_ping_service) {
+PingClient_handle_ping_service_pong(&PingPongCfg_client1_var);
+
 }
-// Dispatch for messages PingClient::ping_service::ping
-void dispatch_PingClient_send_ping_service_ping(struct PingClient_Instance *_instance){
-if (_instance == &PingPongCfg_client_var) {
-PingServer_handle_ping_service_ping(&PingPongCfg_server_var);
+
 }
+
+
+//New dispatcher for messages
+void dispatch_ping(uint16_t sender) {
+if (sender == PingPongCfg_client1_var.id_ping_service) {
+PingServer_handle_ping_service_ping(&PingPongCfg_server2_var);
+PingServer_handle_ping_service_ping(&PingPongCfg_server1_var);
+
 }
+if (sender == PingPongCfg_client2_var.id_ping_service) {
+PingServer_handle_ping_service_ping(&PingPongCfg_server1_var);
+
+}
+
+}
+
 
 void processMessageQueue() {
 if (fifo_empty()) return; // return if there is nothing to do
@@ -352,44 +393,67 @@ code += fifo_dequeue();
 
 // Switch to call the appropriate handler
 switch(code) {
-case 2:
-while (mbufi < 2) mbuf[mbufi++] = fifo_dequeue();
-dispatch_PingServer_send_ping_service_pong((struct PingServer_Instance*)instance_by_id((mbuf[0] << 8) + mbuf[1]) /* instance */);
-break;
 case 1:
 while (mbufi < 2) mbuf[mbufi++] = fifo_dequeue();
-dispatch_PingClient_send_ping_service_ping((struct PingClient_Instance*)instance_by_id((mbuf[0] << 8) + mbuf[1]) /* instance */);
+dispatch_pong((mbuf[0] << 8) + mbuf[1] /* instance port*/);
+break;
+case 2:
+while (mbufi < 2) mbuf[mbufi++] = fifo_dequeue();
+dispatch_ping((mbuf[0] << 8) + mbuf[1] /* instance port*/);
 break;
 }
 }
+
+
+//external Message enqueue
 
 void initialize_configuration_PingPongCfg() {
 // Initialize connectors
 register_PingClient_send_ping_service_ping_listener(enqueue_PingClient_send_ping_service_ping);
 register_PingServer_send_ping_service_pong_listener(enqueue_PingServer_send_ping_service_pong);
 
-// Init the ID, state variables and properties for instance PingPongCfg_client
-PingPongCfg_client_var.id = add_instance( (void*) &PingPongCfg_client_var);
-PingPongCfg_client_var.PingClient_PingClientMachine_State = PINGCLIENT_PINGCLIENTMACHINE_PING_STATE;
 
-// Init the ID, state variables and properties for instance PingPongCfg_server
-PingPongCfg_server_var.id = add_instance( (void*) &PingPongCfg_server_var);
-PingPongCfg_server_var.PingServer_PongServerMachine_State = PINGSERVER_PONGSERVERMACHINE_ACTIVE_STATE;
+// Network Initilization 
 
-PingServer_PongServerMachine_OnEntry(PINGSERVER_PONGSERVERMACHINE_STATE, &PingPongCfg_server_var);
-PingClient_PingClientMachine_OnEntry(PINGCLIENT_PINGCLIENTMACHINE_STATE, &PingPongCfg_client_var);
+
+// End Network Initilization 
+
+// Init the ID, state variables and properties for instance PingPongCfg_server1
+PingPongCfg_server1_var.id_ping_service = add_instance( (void*) &PingPongCfg_server1_var);
+PingPongCfg_server1_var.PingServer_PongServerMachine_State = PINGSERVER_PONGSERVERMACHINE_ACTIVE_STATE;
+
+PingServer_PongServerMachine_OnEntry(PINGSERVER_PONGSERVERMACHINE_STATE, &PingPongCfg_server1_var);
+// Init the ID, state variables and properties for instance PingPongCfg_server2
+PingPongCfg_server2_var.id_ping_service = add_instance( (void*) &PingPongCfg_server2_var);
+PingPongCfg_server2_var.PingServer_PongServerMachine_State = PINGSERVER_PONGSERVERMACHINE_ACTIVE_STATE;
+
+PingServer_PongServerMachine_OnEntry(PINGSERVER_PONGSERVERMACHINE_STATE, &PingPongCfg_server2_var);
+// Init the ID, state variables and properties for instance PingPongCfg_client1
+PingPongCfg_client1_var.id_ping_service = add_instance( (void*) &PingPongCfg_client1_var);
+PingPongCfg_client1_var.PingClient_PingClientMachine_State = PINGCLIENT_PINGCLIENTMACHINE_PING_STATE;
+
+PingClient_PingClientMachine_OnEntry(PINGCLIENT_PINGCLIENTMACHINE_STATE, &PingPongCfg_client1_var);
+// Init the ID, state variables and properties for instance PingPongCfg_client2
+PingPongCfg_client2_var.id_ping_service = add_instance( (void*) &PingPongCfg_client2_var);
+PingPongCfg_client2_var.PingClient_PingClientMachine_State = PINGCLIENT_PINGCLIENTMACHINE_PING_STATE;
+
+PingClient_PingClientMachine_OnEntry(PINGCLIENT_PINGCLIENTMACHINE_STATE, &PingPongCfg_client2_var);
 }
 
 
 
 
 void setup() {
+Serial.begin(9600);
 initialize_configuration_PingPongCfg();
 
 }
 
 void loop() {
-PingClient_handle_empty_event(&PingPongCfg_client_var);
+
+// Network Listener
+PingClient_handle_empty_event(&PingPongCfg_client1_var);
+PingClient_handle_empty_event(&PingPongCfg_client2_var);
 
     processMessageQueue();
 }

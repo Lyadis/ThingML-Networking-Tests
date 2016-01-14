@@ -1,0 +1,38 @@
+import "_Datatypes.thingml"
+
+thing fragment TimerMsgs {
+	message timer_start(id : UInt8, time : UInt32) @timer_start "true";
+	message timer_cancel(id : UInt8) @timer_cancel "true";
+	message timeout(id : UInt8) @timerout "true";
+	message 4ms_tic() @xms_tic "4";
+	message 10ms_tic() @xms_tic "10";
+	message 25ms_tic() @xms_tic "25";
+}
+
+thing Blinker includes TimerMsgs {
+
+	required port p {
+		sends timer_start, timer_cancel
+		receives timeout, 4ms_tic, 10ms_tic, 25ms_tic
+	}
+
+	statechart myChart init S1 {
+		state S1{
+			on entry do 
+				print "S1\n"
+				p!timer_start(0, 1000)
+			end
+			transition -> S2 event e : p?timeout guard e.id == 0
+		}
+		state S2 {
+			on entry print "S2\n"
+		}
+	}
+}
+
+configuration testTimerCfg 
+@arduino_stdout "Serial"
+{
+	instance b : Blinker
+	connector b.p over Timer
+}

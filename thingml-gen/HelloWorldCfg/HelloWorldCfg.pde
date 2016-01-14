@@ -4,8 +4,7 @@
 
 // Definition of the instance stuct:
 struct HelloWorldThing_Instance {
-// Variables for the ID of the instance
-int id;
+// Variables for the ID of the ports of the instance
 // Variables for the current instance state
 int HelloWorldThing_HelloWorldChart_State;
 // Variables for the properties of the instance
@@ -44,7 +43,7 @@ int _fifo_enqueue(byte b);
    The caller should check that the fifo is not empty */
 byte fifo_dequeue();
 
-#define MAX_INSTANCES 1
+#define MAX_INSTANCES 0
 #define FIFO_SIZE 256
 
 /*********************************
@@ -137,7 +136,7 @@ _instance->HelloWorldThing_HelloWorldChart_State = HELLOWORLDTHING_HELLOWORLDCHA
 HelloWorldThing_HelloWorldChart_OnEntry(_instance->HelloWorldThing_HelloWorldChart_State, _instance);
 break;
 case HELLOWORLDTHING_HELLOWORLDCHART_INIT_STATE:
-// PRINT ERROR: "Hello World!"
+Serial.print("Hello World!");
 break;
 default: break;
 }
@@ -169,6 +168,8 @@ default: break;
  *****************************************************************************/
 
 //Declaration of instance variables
+//Instance HelloWorldCfg_HelloWorldInstance
+// Variables for the properties of the instance
 struct HelloWorldThing_Instance HelloWorldCfg_HelloWorldInstance_var;
 
 
@@ -189,11 +190,19 @@ switch(code) {
 }
 }
 
+
+//external Message enqueue
+
 void initialize_configuration_HelloWorldCfg() {
 // Initialize connectors
 
+
+// Network Initilization 
+
+
+// End Network Initilization 
+
 // Init the ID, state variables and properties for instance HelloWorldCfg_HelloWorldInstance
-HelloWorldCfg_HelloWorldInstance_var.id = add_instance( (void*) &HelloWorldCfg_HelloWorldInstance_var);
 HelloWorldCfg_HelloWorldInstance_var.HelloWorldThing_HelloWorldChart_State = HELLOWORLDTHING_HELLOWORLDCHART_INIT_STATE;
 
 HelloWorldThing_HelloWorldChart_OnEntry(HELLOWORLDTHING_HELLOWORLDCHART_STATE, &HelloWorldCfg_HelloWorldInstance_var);
@@ -203,11 +212,14 @@ HelloWorldThing_HelloWorldChart_OnEntry(HELLOWORLDTHING_HELLOWORLDCHART_STATE, &
 
 
 void setup() {
+Serial.begin(9600);
 initialize_configuration_HelloWorldCfg();
 
 }
 
 void loop() {
+
+// Network Listener
 
     processMessageQueue();
 }
