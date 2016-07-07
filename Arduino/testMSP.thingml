@@ -1,0 +1,105 @@
+datatype Int16<2> @c_type "int16_t";
+datatype UInt8<1> @c_type "uint8_t";
+datatype UInt16<2> @c_type "uint16_t";
+datatype UInt32<4> @c_type "uint32_t";
+
+thing fragment TimerMsgs {
+	message 500ms_tic() @xms_tic "500";
+}
+
+thing fragment MSPMsgs {
+	message Req_MSP_RAW_IMU() @code "102";
+	message MSP_RAW_IMU(accx : Int16, accy : Int16, accz : Int16, gyrx : Int16, gyry : Int16, gyrz : Int16, magx : Int16, magy : Int16, magz : Int16)@code "358";
+
+	message Req_MSP_STATUS() @code "101";
+
+	message MSP_STATUS(cycleTime : UInt16, i2c_errors_count : UInt16, sensor : UInt16, flag : UInt32, gf : UInt8) @code "357";
+}
+
+
+thing Client includes MSPMsgs, TimerMsgs
+ {
+
+	required port fc {
+		receives MSP_RAW_IMU, MSP_STATUS
+		sends Req_MSP_RAW_IMU, Req_MSP_STATUS
+	}
+
+	required port clock {
+		receives 500ms_tic
+	}
+
+	property altitude : UInt8
+	
+	statechart PingClientMachine init S {
+	
+		on entry do
+			print "Client Started!\n"
+		end
+		state S {
+			internal event clock?500ms_tic action do 
+				print "Send Req...\n" 
+				//fc!Req_MSP_STATUS()
+				fc!Req_MSP_RAW_IMU()
+			end
+
+			internal event e : fc?MSP_STATUS action do
+				print e.cycleTime
+				print "\n"
+			end
+				
+			internal event e : fc?MSP_RAW_IMU action do
+				print "(accx: "
+				print e.accx
+				print " | "
+				print "accy: "
+				print e.accy
+				print " | "
+				print "accz: "
+				print e.accz
+				print " | "
+				print "gyrx: "
+				print e.gyrx
+				print " | "
+				print "gyry: "
+				print e.gyry
+				print " | "
+				print "gyrz: "
+				print e.gyrz
+				print " | "
+				print "magx: "
+				print e.magx
+				print " | "
+				print "magy: "
+				print e.magy
+				print " | "
+				print "magz: "
+				print e.magz
+				print ")\n"
+			end
+			
+		}
+		
+	}
+	
+}
+
+
+protocol Serial2
+@nlg "NoBufSerial"
+@serializer "MSP"
+@serial_header "$M"
+;
+
+protocol Timer @hardware_timer "1";
+
+configuration testMSPCfg 
+@arduino_stdout "Serial"
+{
+
+	instance c: Client
+
+	connector c.fc over Serial2
+	connector c.clock over Timer @hardware_timer "1"
+
+}

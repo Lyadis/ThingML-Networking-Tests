@@ -1,0 +1,34 @@
+import "Msgs.thingml"
+
+thing Client includes Msgs {
+
+	provided port p {
+		sends m
+		receives m
+	}
+	statechart Chart init Init {
+		state Init {
+			on entry do
+				print "[Client] Init\n"
+				p!m()
+				print "[Client] sent m\n"
+			end
+		
+			
+			internal event p?m action do
+				print "[Client] received m\n"
+			end
+		}
+	}
+}
+
+configuration MQTTClient
+@add_c_libraries "mosquitto"
+{
+	instance c : Client
+
+	connector c.p over MQTT
+	@mqtt_server_address "192.168.1.108"
+	@platform "x86"
+
+}

@@ -1,0 +1,48 @@
+
+
+thing fragment MSPMsgs {
+	message MSP_IDENT(VERSION : UInt8, MULTITYPE : UInt8, MSP_VERSION UInt8, capability : UInt32) @code "100";	
+	message MSP_STATUS(cycleTime : UInt16, i2c_errors_count : UInt16, sensor : UInt16, flag : UInt32, global_conf.currentSet : UInt8) @code "101";
+	message MSP_RAW_IMU(accx : Int16 , accy : Int16 , accz : Int16 , gyrx : Int16 , gyry : Int16 , gyrz : Int16 , magx : Int16 , magy : Int16 , magz : Int16) @code "102";
+	message MSP_SERVO(Servo00 : UInt16, Servo01 : UInt16, Servo10 : UInt16, Servo11 : UInt16, Servo20 : UInt16, Servo21 : UInt16, Servo30 : UInt16, Servo31 : UInt16, Servo40 : UInt16, Servo41 : UInt16, Servo50 : UInt16, Servo51 : UInt16, Servo60 : UInt16, Servo61 : UInt16, Servo70 : UInt16, Servo71 : UInt16) @code "103";
+	message MSP_MOTOR(Motor00 : UInt16, Motor01 : UInt16, Motor10 : UInt16, Motor11 : UInt16, Motor20 : UInt16, Motor21 : UInt16, Motor30 : UInt16, Motor31 : UInt16, Motor40 : UInt16, Motor41 : UInt16, Motor50 : UInt16, Motor51 : UInt16, Motor60 : UInt16, Motor61 : UInt16, Motor70 : UInt16, Motor71 : UInt16) @code "104";
+	message MSP_SET_MOTOR(Motor00 : UInt16, Motor01 : UInt16, Motor10 : UInt16, Motor11 : UInt16, Motor20 : UInt16, Motor21 : UInt16, Motor30 : UInt16, Motor31 : UInt16, Motor40 : UInt16, Motor41 : UInt16, Motor50 : UInt16, Motor51 : UInt16, Motor60 : UInt16, Motor61 : UInt16, Motor70 : UInt16, Motor71 : UInt16) @code "214";
+	message MSP_RC(rcData[RC_CHANS]	16 x UInt16) @code "105";
+	message MSP_SET_RAW_RC(rcData[RC_CHANS]	16 x UInt16) @code "200";
+	message MSP_RAW_GPS(GPS_FIX : UInt8 , GPS_numSat : UInt8 , GPS_coord[LAT] : UInt32 , GPS_coord[LON] : UInt32 , GPS_altitude : UInt16 , GPS_speed : UInt16 , GPS_ground_course : UInt16) @code "106";
+	message MSP_SET_RAW_GPS	(GPS_FIX : UInt8 , GPS_numSat : UInt8 , GPS_coord[LAT] : UInt32 , GPS_coord[LON] : UInt32 , GPS_altitude : UInt16 , GPS_speed : UInt16) @code "201";
+	message MSP_COMP_GPS(GPS_distanceToHome : UInt16 , GPS_directionToHome : UInt16 , GPS_update : UInt8) @code "107";
+	message MSP_ATTITUDE(angx : Int16 , angy : Int16 , heading : Int16) @code "108";
+	message MSP_ALTITUDE(EstAlt : Int32 , vario : Int16) @code "109";
+	message MSP_ANALOG(vbat : UInt8 , IntPowerMeterSum : UInt16 , rssi : UInt16 , amperage : UInt16) @code "110";
+	message MSP_RC_TUNING(byteRC_RATE : UInt8 , byteRC_EXPO : UInt8 , byteRollPitchRate : UInt8 , byteYawRate : UInt8 , byteDynThrPID : UInt8 , byteThrottle_MID : UInt8 , byteThrottle_EXPO : UInt8) @code "111";
+	message MSP_SET_RC_TUNING(byteRC_RATE : UInt8 , byteRC_EXPO : UInt8 , byteRollPitchRate : UInt8 , byteYawRate : UInt8 , byteDynThrPID : UInt8 , byteThrottle_MID : UInt8 , byteThrottle_EXPO : UInt8) @code "204";
+	message MSP_PID(PIDITEMS x conf.pid[]	3*PIDITEMS x UInt8) @code "112";
+	message MSP_SET_PID(PIDITEMS x conf.pid[]	3*PIDITEMS x UInt8) @code "202";
+	message MSP_BOX(BOXITEMS x conf.activate[]	BOXITEMS x UInt16) @code "113";
+	message MSP_SET_BOX(BOXITEMS x conf.activate[]	BOXITEMS x UInt16) @code "203";
+	message MSP_MISC(intPowerTrigger1	UNIT 16 , conf.minthrottle	UNIT 16 , MAXTHROTTLE	UNIT 16 , MINCOMMAND	UNIT 16 , conf.failsafe_throttle	UNIT 16 , plog.arm	UNIT 16 , plog.lifetime	UNIT 32 , conf.mag_declination	UNIT 16 , conf.vbatscale	UNIT 8 , conf.vbatlevel_warn1	UNIT 8 , conf.vbatlevel_warn2	UNIT 8 , conf.vbatlevel_crit	UNIT 8
+	message MSP_SET_MISC(intPowerTrigger1	UNIT 16 , conf.minthrottle	UNIT 16 , MAXTHROTTLE	UNIT 16 , MINCOMMAND	UNIT 16 , conf.failsafe_throttle	UNIT 16 , plog.arm	UNIT 16 , plog.lifetime	UNIT 32 , conf.mag_declination	UNIT 16 , conf.vbatscale	UNIT 8 , conf.vbatlevel_warn1	UNIT 8 , conf.vbatlevel_warn2	UNIT 8 , conf.vbatlevel_crit	UNIT 8) @code "114";
+	message MSP_MOTOR_PINS(8*PWM_PIN	8 x UNIT 8) @code "115";
+	message MSP_BOXNAMES(string of BOX items	string) @code "115";
+	message MSP_PIDNAMES(string of PID items	string) @code "117";
+	message MSP_WP(wp_no : UInt8 , lat : UInt32 , lon : UInt32 , AltHold : UInt32 , heading : UInt16 , time to stay : UInt16 , nav flag : UInt8) @code "209";
+	message MSP_SET_WP(wp_no : UInt8 , lat : UInt32 , lon : UInt32 , AltHold : UInt32 , heading : UInt16 , time to stay : UInt16 , nav flag : UInt8) @code "119";
+	message MSP_BOXIDS(ID*CHECKBOXITEMS	CHECKBOXITEMS x UInt8) @code "102";
+	message MSP_SERVO_CONF(8 x conf.servoConf[]	8 x [UInt16, UInt16, UInt16, UInt8]) @code "120";
+	message MSP_SET_SERVO_CONF(8 x conf.servoConf[]	8 x [UInt16, UInt16, UInt16, UInt8]) @code "212";
+	message MSP_ACC_CALIBRATION() @code "205";
+	message MSP_MAG_CALIBRATION() @code "206";	
+	message MSP_RESET_CONF() @code "208";
+	message MSP_SELECT_SETTING(global_conf.currentSet : UInt8) @code "210";
+	message MSP_SET_HEAD(magHold : Int16) @code "211";
+	message MSP_BIND() @code "240";
+	message MSP_EEPROM_WRITE() @code "250";
+}
+
+
+				
+	
+				
+	
+

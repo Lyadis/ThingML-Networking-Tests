@@ -1,0 +1,6 @@
+thing fragment A {
+
+    function a() do
+        print "a()\n"
+    end
+}

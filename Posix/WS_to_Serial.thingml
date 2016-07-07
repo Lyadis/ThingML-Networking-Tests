@@ -1,0 +1,52 @@
+import "../lib/_Datatypes.thingml"
+
+protocol Websocket
+@serializer "PosixJSONSerializerPlugin";
+protocol Serial
+@serial_path_to_device "/dev/ttyACM1";
+
+configuration proxy {
+	instance mux : Multiplexer
+
+	connector mux.Ser over Serial
+	connector mux.WS over Websocket
+}
+
+
+thing fragment Adafruit_RGBLCDShieldMsgs {
+	message 4ms_tick() @xms_tic "4";
+
+	message button_press(but_id : UInt8) @code "0";
+	message button_release(but_id : UInt8) @code "1";
+	message button_long_press(but_id : UInt8) @code "2";
+	
+	message set_bgcolor(color : UInt8) @code "3";
+	
+}
+
+thing Multiplexer includes Adafruit_RGBLCDShieldMsgs {
+
+	required port Ser {
+		receives button_press, button_release, button_long_press
+		sends set_bgcolor
+	}
+
+	required port WS {
+		sends button_press, button_release, button_long_press
+		receives set_bgcolor
+	}
+	
+	statechart myChart init Active {
+		state Active {
+			internal event e : Ser?button_press
+			action WS!button_press(e.but_id)
+			internal event e : Ser?button_release
+			action WS!button_release(e.but_id)
+			internal event e : Ser?button_long_press
+			action WS!button_long_press(e.but_id)
+
+			internal event e : WS?set_bgcolor
+			action Ser!set_bgcolor(e.color)
+		}
+	}
+}

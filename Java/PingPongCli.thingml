@@ -1,0 +1,64 @@
+
+datatype UInt8<1> @c_type "uint8_t"
+@java_type "byte";
+
+thing fragment PingPongMsgs {
+	message ping(u : UInt8) @code "16";
+	message pong() @code "165";
+}
+
+
+
+thing PingClient includes PingPongMsgs {
+
+	required port ping_service {
+		receives pong
+		sends ping
+	}
+	
+	statechart PingClientMachine init Ping {
+	
+	on entry print "Ping Client Started!\n"
+	
+		state Ping {
+			
+			on entry do
+				print "Send Ping..." 
+				ping_service!ping(255)
+			end
+				
+			
+			transition PONG -> Pong 
+			event ping_service?pong
+			
+		}
+		
+		state Pong {
+			on entry print "Got pong!\n"
+			
+			transition -> Stop
+			
+		}
+		
+		state Stop {
+			on entry print "Bye.\n"
+		}
+		
+	}
+	
+}
+
+
+
+protocol WS
+@serializer "JSON"
+@url "ws://127.0.0.1:9000"
+
+configuration JavaPingPongCfg 
+{
+
+	instance client: PingClient
+
+	connector client.ping_service over WS
+
+}

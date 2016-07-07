@@ -7,10 +7,12 @@ Now it is time to design two things that communicate together: this is the ping 
 First, define the messages that make sense for this ping pong application...
 Obviously, one ping and one pong message
 */
+datatype UInt8<1> @c_type "uint8_t";
 datatype UInt16<2> @c_type "uint16_t";
 
 thing fragment PingPongMsgs {
-	message ping(u : UInt16, u2 : UInt16) @code "16";
+	message ping(u : UInt16) @code "16";
+	message ping1(u : UInt8);
 	message pong();
 }
 
@@ -21,7 +23,7 @@ thing PingServer includes PingPongMsgs {
 
 	provided port ping_service {
 		sends pong
-		receives ping
+		receives ping, ping1, pong
 	}
 
 	statechart PongServerMachine init Active {
@@ -34,8 +36,6 @@ thing PingServer includes PingPongMsgs {
 			action do
 				print "ping: "
 				print e.u
-				print ", "
-				print e.u2
 				print "\n"
 				ping_service!pong()
 			end
@@ -65,7 +65,7 @@ thing PingClient includes PingPongMsgs {
 			
 			on entry do
 				print "Send Ping..." 
-				ping_service!ping(257, 258)
+				ping_service!ping(255)
 			end
 				
 			
@@ -98,13 +98,15 @@ TODO: compile and run this configuration for the different platforms: C/Linux, J
 @serial_escape_byte "125"
 */
 protocol Serial1
-@serializer "Binary"
+@nlg "NoBufSerial"
+@serializer "msgpack"
 ;
 protocol Serial2
-@serializer "Binary"
+@nlg "NoBufSerial"
+@serializer "msgpack"
 ;
 
-configuration PingPongCfg 
+configuration testMsgpackCfg 
 @arduino_stdout "Serial"
 {
 

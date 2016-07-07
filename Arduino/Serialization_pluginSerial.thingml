@@ -224,11 +224,17 @@ thing Receiver includes Msgs {
 	}
 }
 
+protocol Serial1
+;
+protocol Serial2
+;
+
 configuration Serialization_test_Cfg
 @arduino_stdout "Serial"
 {
 	instance s: Sender
 	instance r : Receiver
 	
-	connector s.myPort => r.myPort
+	connector s.myPort over Serial1
+	connector r.myPort over Serial2
 }

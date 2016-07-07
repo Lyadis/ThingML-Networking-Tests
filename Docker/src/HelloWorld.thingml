@@ -1,0 +1,25 @@
+thing HelloThing {
+
+	statechart HelloWorld init Greetings {
+	
+		state Greetings {
+			
+			transition -> Bye 
+			action print "Hello World!\n"
+			
+		}
+	
+		state Bye {
+			on entry print "Bye.\n"
+		}
+	
+	}
+}
+
+configuration Hello
+@docker "true"
+{
+
+	instance my_instance: HelloThing
+
+}

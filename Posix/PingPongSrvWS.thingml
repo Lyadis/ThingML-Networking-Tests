@@ -1,22 +1,13 @@
-/**
-We have seen in 1_helloWorld how to make a simple thing.
-Now it is time to design two things that communicate together: this is the ping pong sample!
-*/
-
-/**
-First, define the messages that make sense for this ping pong application...
-Obviously, one ping and one pong message
-*/
-datatype UInt16<2> @c_type "uint16_t";
+import "../lib/_Datatypes.thingml"
+//datatype UInt8<1> @c_type "uint8_t";
 
 thing fragment PingPongMsgs {
-	message ping(u : UInt16, u2 : UInt16) @code "16";
-	message pong();
+	message ping(u : UInt8) @code "16";
+	//message ping(u : Boolean) @code "16";
+	message pong() @code "165";
 }
 
-/**
-Now we implement a basic ping server. It will sends back a pong message whenever it receives a ping message
-*/
+
 thing PingServer includes PingPongMsgs {
 
 	provided port ping_service {
@@ -34,8 +25,6 @@ thing PingServer includes PingPongMsgs {
 			action do
 				print "ping: "
 				print e.u
-				print ", "
-				print e.u2
 				print "\n"
 				ping_service!pong()
 			end
@@ -43,13 +32,7 @@ thing PingServer includes PingPongMsgs {
 		}
 	}
 }
-
-/**
-Now we implement a ping client. 
-It will first (in the Ping state) sends a ping message and wait for a pong message
-When the pong message is received, we will go to the Pong state, acknoledging (print) that we have received the pong
-Finally, we will go the Stop state and print Bye.
-*/
+/*
 thing PingClient includes PingPongMsgs {
 
 	required port ping_service {
@@ -65,7 +48,7 @@ thing PingClient includes PingPongMsgs {
 			
 			on entry do
 				print "Send Ping..." 
-				ping_service!ping(257, 258)
+				ping_service!ping('255.5')
 			end
 				
 			
@@ -87,7 +70,7 @@ thing PingClient includes PingPongMsgs {
 		
 	}
 	
-}
+}*/
 
 /**
 Again, that simple ping pong application is fully platform-independent.
@@ -97,21 +80,24 @@ TODO: compile and run this configuration for the different platforms: C/Linux, J
 @serial_stop_byte "19"
 @serial_escape_byte "125"
 */
-protocol Serial1
-@serializer "Binary"
-;
-protocol Serial2
-@serializer "Binary"
+//protocol Serial1
+//;
+//protocol Serial
+//@serial_path_to_device "/dev/ttyACM0"
+//;
+
+protocol Websocket
+@platform "x86"
+@serializer "PosixJSONSerializerPlugin"
 ;
 
-configuration PingPongCfg 
-@arduino_stdout "Serial"
+configuration PingPongSrvCfg 
 {
 
-	instance client: PingClient
+	//instance client: PingClient
 	instance server: PingServer
 
-	connector client.ping_service over Serial2
-	connector server.ping_service over Serial1
+	//connector client.ping_service over Serial
+	connector server.ping_service over Websocket
 
 }

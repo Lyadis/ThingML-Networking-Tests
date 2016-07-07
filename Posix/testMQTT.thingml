@@ -1,11 +1,15 @@
+import "../lib/_Datatypes.thingml"
+
 thing fragment Msgs {
-	message m() @code "55";
+	message m1();
+	message m2(u : UInt16);
+	message m3(u : UInt16);
 }
 
 thing antisocial includes Msgs {
 	provided port p {
-		sends m
-		receives m
+		sends m1, m2
+		receives m3
 	}
 	statechart Chart init Init {
 		state Init {
@@ -14,24 +18,23 @@ thing antisocial includes Msgs {
 			end
 		
 			
-			internal event p?m action do
+			internal event e : p?m3 action do
 				print "[antisocial] received m\n"
-				p!m()
+				p!m1()
+				p!m2(e.u)
 				print "[antisocial] sent m\n"
 			end
 		}
 	}
 }
-protocol Websocket @serializer "JSON";
+protocol MQTT @serializer "JSON"
+@platform "x86";
 
-configuration WSCfg
-@add_c_libraries "websockets"
-@add_c_libraries "ssl"
-@add_c_libraries "crypto"
-@add_c_libraries "z"
+configuration MQTTCfg
+@platform "x86"
 {
 	instance a : antisocial
 
-	connector a.p over Websocket
+	connector a.p over MQTT
 
 }

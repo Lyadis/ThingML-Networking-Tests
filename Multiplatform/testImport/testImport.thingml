@@ -1,0 +1,20 @@
+import "testB.thingml"
+
+thing C includes B {
+
+    function c() do
+        print "c()\n"
+        b()
+    end
+
+	statechart chart init S {
+		state S {
+			on entry c()
+		}
+	}
+}
+
+configuration testImport {
+
+	 instance c : C
+}

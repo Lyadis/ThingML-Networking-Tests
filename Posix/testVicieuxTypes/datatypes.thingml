@@ -1,0 +1,2 @@
+datatype Unused<1> @c_type "uint8_t";
+datatype Used<1> @c_type "uint8_t";

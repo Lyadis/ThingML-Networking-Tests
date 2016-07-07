@@ -1,0 +1,10 @@
+import "testA.thingml"
+
+
+thing fragment B includes A {
+
+    function b() do
+        print "b()\n"
+        a()
+    end
+}

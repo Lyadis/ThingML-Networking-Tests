@@ -1,0 +1,50 @@
+
+datatype UInt8<1> 
+	@c_type "uint8_t"
+	@java_type "int"
+	@checker_type "Integer"
+;
+
+thing fragment PingPongMsgs {
+	message ping(u : UInt8) @code "16";
+	message pong() @code "165";
+}
+
+
+thing PingServer includes PingPongMsgs {
+
+	provided port ping_service {
+		sends pong
+		receives ping
+	}
+
+	statechart PongServerMachine init Active {
+
+        on entry print "Ping Server Started!\n"
+
+		state Active {
+			
+			internal event e : ping_service?ping
+			action do
+				print "ping: "
+				print e.u
+				print "\n"
+				ping_service!pong()
+			end
+			
+		}
+	}
+}
+
+protocol Serial
+@serializer "Binary"
+;
+
+configuration PingPongCfg 
+{
+
+	instance server: PingServer
+
+	connector server.ping_service over Serial
+
+}

@@ -1,0 +1,71 @@
+
+datatype UInt16<2> 
+	@c_type "uint16_t"
+	@type_checker "Integer"
+;
+
+thing fragment PingPongMsgs {
+	message ping(u : UInt16) @code "16";
+}
+
+thing PingClient includes PingPongMsgs {
+	property id : UInt16 = 0
+	property max : UInt16 = 1000
+
+	provided port in {
+		receives ping
+	}
+
+	required port out {
+		sends ping
+	}
+	
+	statechart PingClientMachine init Ping {
+	
+		state Ping {
+			
+			on entry do
+				print "[" 
+				print id
+				print "] Ready\n" 
+				if (id == 0) out!ping(id)
+			end
+			
+			internal event e: in?ping
+			guard e.u <= max
+			action do
+				print "[" 
+				print id
+				print "] got " 
+				print e.u 
+				print "\n" 
+				out!ping(e.u+1)
+			end
+		}
+		
+	}
+	
+}
+
+configuration TestThreadCfg 
+@arduino_stdout "Serial"
+{
+
+	instance c0: PingClient
+	instance c1: PingClient
+	instance c2: PingClient
+	instance c3: PingClient
+	instance c4: PingClient
+
+	set c1.id = 1
+	set c2.id = 2
+	set c3.id = 3
+	set c4.id = 4
+
+	connector c0.out => c1.in
+	connector c1.out => c2.in
+	connector c2.out => c3.in
+	connector c3.out => c4.in
+	connector c4.out => c0.in
+
+}

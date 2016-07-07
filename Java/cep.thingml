@@ -1,0 +1,29 @@
+import "../lib/_Datatypes.thingml"
+
+configuration cepCfg {
+	instance i : HighTemperatureDetection
+}
+
+thing HighTemperatureDetection {
+	// message definition
+	message temperatureSensor (id : Integer, temp : Float);
+	message temperatureSensorCEP (id : Integer, temp : Float, msg : String);
+	message PressureSensor (id : Integer, pressure2 : Float);
+	//port definition
+	
+	internal port eventPort { 
+		sends temperatureSensor, temperatureSensorCEP, PressureSensor
+		receives temperatureSensor, temperatureSensorCEP, PressureSensor
+	}
+	//find stream query
+	// stream query conversion
+	stream randomName
+	from t : eventPort?temperatureSensor  :: keep if t.temp > 20.0 and t.id == 10
+	select 	
+		  var nid:Integer = t.id
+		  var ntemp:Float = t.temp
+		  var nmsg:String = "CEP"
+	produce eventPort!temperatureSensorCEP(nid, ntemp, nmsg)
+
+
+}

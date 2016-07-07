@@ -1,0 +1,41 @@
+import "../../src/main/resources/tests/thingml.thingml"
+
+import "../../src/main/resources/tests/core/_java/test.thingml"
+import "../../src/main/resources/tests/testArrays4.thingml"
+import "../../src/main/resources/tests/core/_java/timer.thingml"
+
+thing Tester includes TestHarness, TimerClient {
+    statechart TestChart init e0 {
+        on entry print "\n[Test] "
+        state e0 {
+            on entry timer!timer_start(250)
+            transition -> e1
+            event timer?timer_timeout
+        }
+        state e1 {
+            on entry do                print "\n"
+                testEnd!testEnd()
+            end        }
+    }
+}
+
+configuration TestArrays4_0_Cfg
+{
+    instance harness : Tester
+    instance dump : TestDumpJava
+    instance test : TestArrays4
+    instance timer : TimerJava
+
+    connector harness.testEnd => dump.dumpEnd
+    connector harness.timer => timer.timer
+    connector test.harnessOut => dump.dump
+    connector test.harnessIn => harness.test
+    instance a : A
+    set a.c = 5 + 0
+    instance b : A
+    set b.c = 5 + 5
+    instance d : A
+    connector a.myPort => test.p1
+    connector b.myPort => test.p2
+    connector d.myPort => test.p3
+}

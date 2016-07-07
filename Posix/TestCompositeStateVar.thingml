@@ -1,0 +1,35 @@
+datatype UInt8<1> @c_type "uint8_t";
+
+thing Test {
+
+	property i0 : UInt8 = 0
+
+	statechart Chart init S0 {
+		state S0 {
+            on entry do
+                print "Start\n"
+                print "i0: "
+                'printf("%i", '&i0&');'
+                print "\n"
+            end
+            transition -> C
+        }
+        
+        composite state C init C0 {
+            property i1 : UInt8 = 3
+            state C0 {
+                on entry do
+                    print "Start\n"
+                    print "i1: "
+                    'printf("%i", '&i1&');'
+                    print "\n"
+                end    
+            }    
+        }
+	}
+}
+
+configuration compositeVarCfg {
+    
+    instance t : Test    
+}

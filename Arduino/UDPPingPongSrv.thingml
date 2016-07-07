@@ -1,0 +1,52 @@
+import "../lib/_Datatypes.thingml"
+
+thing fragment PingPongMsgs {
+	message ping(u : UInt16) @code "16";
+	message pong(u : UInt16) @code "165";
+}
+
+
+thing PingServer includes PingPongMsgs {
+
+	provided port ping_service {
+		sends pong
+		receives ping
+	}
+
+	statechart PongServerMachine init Active {
+
+        on entry print "Ping Server Started!\n"
+
+		state Active {
+			
+			internal event e : ping_service?ping
+			action do
+				print "ping: "
+				print e.u
+				print "\n"
+				ping_service!pong(e.u + 50)
+			end
+			
+		}
+	}
+}
+
+
+protocol UDP
+@wifi_ssid "French-Connection"
+@wifi_password "baguette"
+@udp_local_port "8888"
+@udp_remote_port "8888"
+@udp_address "10.0.1.127"
+@serializer "Binary"
+;
+
+configuration UDPSrv
+@arduino_stdout "Serial"
+{
+
+	instance server: PingServer
+
+	connector server.ping_service over UDP
+
+}

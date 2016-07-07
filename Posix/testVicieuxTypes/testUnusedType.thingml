@@ -1,0 +1,22 @@
+import "datatypes.thingml"
+
+thing Test {
+	property p : Used = 1
+	statechart mchart init S {
+		state S {
+			on entry do
+				var u : Unused = 1
+				print "Init\n"
+				print "p: "
+				print p
+				print "\nu: "
+				print u
+				print "\n"
+			end
+		}
+	}
+}
+
+configuration testUnusedTypeCfg {
+	instance t : Test
+}

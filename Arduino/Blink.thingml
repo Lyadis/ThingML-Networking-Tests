@@ -15,9 +15,9 @@ thing Blinker includes TimerMsgs {
     property b1 : Boolean = false
     property b2 : Boolean = false
     property b3 : Boolean = false
-	property led1 : UInt8 = 5
-	property led2 : UInt8 = 6
-	property led3 : UInt8 = 7
+	property led1 : UInt8 = 1
+	property led2 : UInt8 = 2
+	property led3 : UInt8 = 3
 	statechart myChart init S1 {
 
 		state S1{

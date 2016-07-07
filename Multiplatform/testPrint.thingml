@@ -1,0 +1,73 @@
+import "../lib/_Datatypes.thingml"
+
+thing HelloThing {
+	property u8 : UInt8 = 255
+	property u16 : UInt16 = 256
+	property u32 : UInt32 = 45645
+	property i16 : Int16 = '-255'
+	property f : Float = -3.14
+	property i : IntegerF = -5
+	property b : Boolean = 'false'
+	property c : Char = '\'C\''
+
+	statechart HelloWorld init Greetings {
+	
+		state Greetings {
+			
+			transition -> Bye 
+			action do
+				print "Hello World!\n"
+
+				print "u8: "
+				print u8
+				print "\n"
+
+				print "u16: "
+				print u16
+				print "\n"
+
+				print "u32: "
+				print u32
+				print "\n"
+
+				print "i16: "
+				print i16
+				print "\n"
+
+				print "f: "
+				print f
+				print "\n"
+
+				print "1: "
+				print 1
+				print "\n"
+
+				print "i: "
+				print i
+				print "\n"
+
+				print "b: "
+				print b
+				print "\n"
+
+				print "c: "
+				print c
+				print "\n"
+			end
+			
+		}
+	
+		state Bye {
+			on entry print "Bye.\n"
+		}
+	
+	}
+}
+
+
+configuration testPrint 
+{
+
+	instance my_instance: HelloThing
+
+}

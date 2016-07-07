@@ -1,0 +1,46 @@
+import "../lib/_Datatypes.thingml"
+
+thing fragment Msgs {
+	message m1() @code "55";
+	message m2(u:UInt16);
+}
+
+thing antisocial includes Msgs {
+	provided port p {
+		sends m1, m2
+		receives m1, m2
+	}
+	statechart Chart init Init {
+		state Init {
+			on entry do
+				print "[antisocial] Init\n"
+			end
+		
+			
+			internal event p?m1 action do
+				error "[antisocial] received m1\n"
+				p!m1()
+				error "[antisocial] sent m1\n"
+			end
+		
+			
+			internal event e : p?m2 action do
+				error "[antisocial] received m2:"
+				error e.u
+				error "\n"
+				p!m2(203)
+				error "[antisocial] sent m2\n"
+			end
+		}
+	}
+}
+
+protocol stdin @serializer "JSON"
+
+configuration StdInCfg
+{
+	instance a : antisocial
+
+	connector a.p over stdin
+
+}
