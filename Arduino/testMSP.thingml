@@ -86,7 +86,6 @@ thing Client includes MSPMsgs, TimerMsgs
 
 
 protocol Serial2
-@nlg "NoBufSerial"
 @serializer "MSP"
 @serial_header "$M"
 ;
